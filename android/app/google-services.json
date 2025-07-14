@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "761854413031",
+    "project_id": "fitfarm-37b2f",
+    "storage_bucket": "fitfarm-37b2f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:761854413031:android:497964eb723c952d603a42",
+        "android_client_info": {
+          "package_name": "com.fitfarm.fit_farm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUfqsYHM0J1hisNw8On96WC9H06tZs4Dc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
