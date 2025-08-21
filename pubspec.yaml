@@ -51,6 +51,7 @@ dependencies:
   cloud_firestore: ^4.13.0
   flame: ^1.10.0
   http: ^1.2.2
+  url_launcher: ^6.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

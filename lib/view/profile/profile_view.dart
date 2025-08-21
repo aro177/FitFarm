@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fit_farm/view/profile/contact-us.dart';
+import 'package:fit_farm/view/profile/policy.dart';
 import 'package:flutter/material.dart';
 
 import '../../common/colo_extension.dart';
@@ -338,6 +340,7 @@ class _ProfileViewState extends State<ProfileView> {
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
+                      
                     ),
                     const SizedBox(
                       height: 8,
@@ -354,7 +357,7 @@ class _ProfileViewState extends State<ProfileView> {
                             title: "Logout",
                             onPressed: () async {
                               await FirebaseAuth.instance.signOut();
-
+                              
                               if (!context.mounted) return;
 
                               Navigator.pushReplacement(
@@ -369,7 +372,20 @@ class _ProfileViewState extends State<ProfileView> {
                         return SettingRow(
                           icon: iObj["image"].toString(),
                           title: iObj["name"].toString(),
-                          onPressed: () {},
+                          onPressed: () {
+                            if (iObj["tag"] == "5") { // Contact Us
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ContactUsView()),
+                                );
+                              }
+                            else if (iObj["tag"] == "6") { // Privacy Policy
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const PrivacyPolicyView()),
+                                );
+                              }
+                            },
                         );
                       },
                     )
