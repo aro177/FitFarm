@@ -10,9 +10,12 @@ import 'package:fit_farm/Model/ExerciseDataModel.dart';
 import 'main.dart';
 
 class DetectionScreen extends StatefulWidget {
-  DetectionScreen({Key? key, required this.exerciseDataModel, required this.onEarnCoin,})
-    : super(key: key);
-  ExerciseDataModel exerciseDataModel;
+  DetectionScreen({
+    Key? key,
+    required this.sequence,         // <-- pass a multi-step sequence now
+    required this.onEarnCoin,       // same callback you had
+  }) : super(key: key);
+  final WorkoutSequence sequence;
   final VoidCallback onEarnCoin;
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -23,65 +26,96 @@ class _MyHomePageState extends State<DetectionScreen> {
   bool isBusy = false;
   late Size size;
 
-  //TODO declare detector
   late PoseDetector poseDetector;
+  dynamic _scanResults;                 // keep as you had (used by buildResult)
+  CameraImage? img;
+
+  int _stepIndex = 0;                   // which step we’re on
+  int _currentReps = 0;                 // reps within the current step
+
+  ExerciseStep get _step => widget.sequence.steps[_stepIndex];
+
   @override
   void initState() {
     super.initState();
     initializeCamera();
   }
 
-  //TODO code to initialize the camera feed
-  initializeCamera() async {
-    //TODO initialize detector
+  Future<void> initializeCamera() async {
+    // Init pose detector
     final options = PoseDetectorOptions(mode: PoseDetectionMode.stream);
     poseDetector = PoseDetector(options: options);
 
     controller = CameraController(
       cameras[0],
       ResolutionPreset.medium,
-      imageFormatGroup:
-          Platform.isAndroid
-              ? ImageFormatGroup.nv21
-              : ImageFormatGroup.bgra8888,
+      imageFormatGroup: Platform.isAndroid
+          ? ImageFormatGroup.nv21
+          : ImageFormatGroup.bgra8888,
     );
-    await controller.initialize().then((_) {
-      if (!mounted) {
-        return;
+
+    await controller!.initialize();
+    if (!mounted) return;
+
+    controller!.startImageStream((image) {
+      if (!isBusy) {
+        isBusy = true;
+        img = image;
+        doPoseEstimationOnFrame();
       }
-      controller.startImageStream(
-        (image) => {
-          if (!isBusy) {isBusy = true, img = image, doPoseEstimationOnFrame()},
-        },
-      );
     });
   }
 
-  //TODO pose detection on a frame
-  dynamic _scanResults;
-  CameraImage? img;
-  doPoseEstimationOnFrame() async {
-    var inputImage = _inputImageFromCameraImage();
+  /// Called by detectors whenever a rep is confirmed
+  void _onRep() {
+    if (!mounted) return;
+    setState(() => _currentReps++);
+    if (_currentReps >= _step.targetReps) {
+      _advanceStep();
+    }
+  }
+
+  Future<void> _advanceStep() async {
+    // Reward per completed step (keep your logic)
+    widget.onEarnCoin();
+
+    if (_stepIndex + 1 < widget.sequence.steps.length) {
+      setState(() {
+        _stepIndex++;
+        _currentReps = 0;
+      });
+    } else {
+      if (mounted) Navigator.pop(context, true); // finished all steps
+    }
+  }
+
+  Future<void> doPoseEstimationOnFrame() async {
+    final inputImage = _inputImageFromCameraImage(); // your existing helper
     if (inputImage != null) {
       final List<Pose> poses = await poseDetector.processImage(inputImage);
-      print("pose=${poses.length}");
+      // debug
+      // print("pose=${poses.length}");
       _scanResults = poses;
 
-      if (!mounted) return;
+      if (!mounted) {
+        isBusy = false;
+        return;
+      }
 
       if (poses.isNotEmpty) {
-        switch (widget.exerciseDataModel.type) {
+        // Route ONLY by the current step’s exercise type
+        switch (_step.type) {
           case ExerciseType.PushUps:
-            detectPushUp(poses.first.landmarks);
+            detectPushUp(poses.first.landmarks, onRep: _onRep);
             break;
           case ExerciseType.Squat:
-            detectSquat(poses.first.landmarks);
+            detectSquat(poses.first.landmarks, onRep: _onRep);
             break;
           case ExerciseType.DownwardDogPlank:
-            detectPlankToDownwardDog(poses.first);
+            detectPlankToDownwardDog(poses.first, onRep: _onRep);
             break;
           case ExerciseType.JumpingJack:
-            detectJumpingJack(poses.first);
+            detectJumpingJack(poses.first, onRep: _onRep);
             break;
         }
       }
@@ -90,12 +124,12 @@ class _MyHomePageState extends State<DetectionScreen> {
     if (!mounted) return;
 
     setState(() {
+      // keep your overlay up to date
       _scanResults;
       isBusy = false;
     });
   }
 
-  //close all resources
   @override
   void dispose() {
     controller?.dispose();
@@ -105,88 +139,125 @@ class _MyHomePageState extends State<DetectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> stackChildren = [];
     size = MediaQuery.of(context).size;
+    final List<Widget> stackChildren = [];
+
     if (controller != null) {
+      // Camera preview
       stackChildren.add(
         Positioned(
           top: 0.0,
           left: 0.0,
           width: size.width,
           height: size.height,
-          child: Container(
-            child:
-                (controller.value.isInitialized)
-                    ? AspectRatio(
-                      aspectRatio: controller.value.aspectRatio,
-                      child: CameraPreview(controller),
-                    )
-                    : Container(),
-          ),
+          child: controller!.value.isInitialized
+              ? AspectRatio(
+            aspectRatio: controller!.value.aspectRatio,
+            child: CameraPreview(controller!),
+          )
+              : const SizedBox.shrink(),
         ),
       );
 
+      // Pose overlay
       stackChildren.add(
         Positioned(
           top: 0.0,
           left: 0.0,
           width: size.width,
           height: size.height,
-          child: buildResult(),
+          child: buildResult(),  // your existing overlay
         ),
       );
 
+      // Bottom circular counter: show current reps / target
       stackChildren.add(
         Align(
           alignment: Alignment.bottomCenter,
           child: Container(
-            margin: EdgeInsets.only(bottom: 20),
+            margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(50),
-              color: widget.exerciseDataModel.color,
+              color: _step.color,
             ),
-            width: 70,
-            height: 70,
+            width: 90,
+            height: 90,
             child: Center(
               child: Text(
-                widget.exerciseDataModel.type == ExerciseType.PushUps ? "$pushUpCount" :
-                widget.exerciseDataModel.type == ExerciseType.Squat ? "$squatCount" :
-                widget.exerciseDataModel.type == ExerciseType.DownwardDogPlank ? "$plankToDownwardDogCount" :
-                "$jumpingJackCount",
-                style: TextStyle(color: Colors.white),
+                '$_currentReps / ${_step.targetReps}',
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
         ),
       );
 
+      // Top banner: show workout name + current step info
       stackChildren.add(
         Align(
           alignment: Alignment.topCenter,
           child: Container(
-            margin: EdgeInsets.only(top: 50, left: 20, right: 20),
+            margin: const EdgeInsets.only(top: 50, left: 20, right: 20),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: widget.exerciseDataModel.color,
+              color: _step.color,
             ),
             width: MediaQuery.of(context).size.width,
-            height: 70,
+            height: 80,
             child: Center(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Text(
-                   widget.exerciseDataModel.title,
-                    style: TextStyle(color: Colors.white),
+                  // Left: workout + step title
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.sequence.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                          const SizedBox(height: 4),
+                          Text(
+                            _step.title.isNotEmpty ? _step.title : _step.type.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  Image.asset('assets/${widget.exerciseDataModel.image}')
+                  // Right: optional image + step index
+                  Row(
+                    children: [
+                      if (_step.image.isNotEmpty)
+                        Image.asset('assets/${_step.image}', height: 48),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Step ${_stepIndex + 1} / ${widget.sequence.steps.length}',
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
         ),
       );
-
     }
 
     return Scaffold(
@@ -198,9 +269,10 @@ class _MyHomePageState extends State<DetectionScreen> {
     );
   }
 
-  int pushUpCount = 0;
   bool isLowered = false;
-  void detectPushUp(Map<PoseLandmarkType, PoseLandmark> landmarks) {
+  void detectPushUp(Map<PoseLandmarkType, PoseLandmark> landmarks, {
+    required VoidCallback onRep,
+  }) {
     final leftShoulder = landmarks[PoseLandmarkType.leftShoulder];
     final rightShoulder = landmarks[PoseLandmarkType.rightShoulder];
     final leftElbow = landmarks[PoseLandmarkType.leftElbow];
@@ -246,21 +318,16 @@ class _MyHomePageState extends State<DetectionScreen> {
       isLowered = true;
     } else if (avgElbowAngle > 160 && isLowered && inPlankPosition) {
       // User returns to the starting position
-      pushUpCount++;
+      onRep();
       isLowered = false;
 
-      // Update UI
-      setState(() {});
-      if (pushUpCount == 5) {
-        widget.onEarnCoin(); // trigger coin addition
-        Navigator.pop(context); // return to listing screen
-      }
     }
   }
 
-  int squatCount = 0;
   bool isSquatting = false;
-  void detectSquat(Map<PoseLandmarkType, PoseLandmark> landmarks) {
+  void detectSquat(Map<PoseLandmarkType, PoseLandmark> landmarks, {
+    required VoidCallback onRep,
+  }) {
     final leftHip = landmarks[PoseLandmarkType.leftHip];
     final rightHip = landmarks[PoseLandmarkType.rightHip];
     final leftKnee = landmarks[PoseLandmarkType.leftKnee];
@@ -296,21 +363,15 @@ class _MyHomePageState extends State<DetectionScreen> {
         isSquatting = true;
       }
     } else if (!deepSquat && isSquatting) {
-      squatCount++;
+      onRep();
       isSquatting = false;
-
-      // Update UI
-      setState(() {});
-      if (squatCount == 5) {
-        widget.onEarnCoin(); // trigger coin addition
-        Navigator.pop(context); // return to listing screen
-      }
     }
   }
 
-  int plankToDownwardDogCount = 0;
   bool isInDownwardDog = false;
-  void detectPlankToDownwardDog(Pose pose) {
+  void detectPlankToDownwardDog(Pose pose, {
+    required VoidCallback onRep,
+  }) {
     final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
     final rightHip = pose.landmarks[PoseLandmarkType.rightHip];
     final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
@@ -349,22 +410,16 @@ class _MyHomePageState extends State<DetectionScreen> {
     if (isDownwardDog && !isInDownwardDog) {
       isInDownwardDog = true;
     } else if (isPlank && isInDownwardDog) {
-      plankToDownwardDogCount++;
+      onRep();
       isInDownwardDog = false;
-
-      // Print count
-      print("Plank to Downward Dog Count: $plankToDownwardDogCount");
-      if (plankToDownwardDogCount == 5) {
-        widget.onEarnCoin(); // trigger coin addition
-        Navigator.pop(context); // return to listing screen
-      }
     }
   }
 
-  int jumpingJackCount = 0;
   bool isJumping = false;
   bool isJumpingJackOpen = false;
-  void detectJumpingJack(Pose pose) {
+  void detectJumpingJack(Pose pose, {
+    required VoidCallback onRep,
+  }) {
     final leftAnkle = pose.landmarks[PoseLandmarkType.leftAnkle];
     final rightAnkle = pose.landmarks[PoseLandmarkType.rightAnkle];
     final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
@@ -405,15 +460,8 @@ class _MyHomePageState extends State<DetectionScreen> {
     if (armsUp && legsApart && !isJumpingJackOpen) {
       isJumpingJackOpen = true;
     } else if (!armsUp && !legsApart && isJumpingJackOpen) {
-      jumpingJackCount++;
+      onRep();
       isJumpingJackOpen = false;
-
-      // Print the count
-      print("Jumping Jack Count: $jumpingJackCount");
-      if (jumpingJackCount == 5) {
-        widget.onEarnCoin(); // trigger coin addition
-        Navigator.pop(context); // return to listing screen
-      }
     }
   }
 

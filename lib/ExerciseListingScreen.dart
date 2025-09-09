@@ -16,143 +16,202 @@ class ExerciseListingScreen extends StatefulWidget {
 }
 
 class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
-  List<ExerciseDataModel> exerciseList = [];
-
-  loadData() {
-    exerciseList.add(
-      ExerciseDataModel(
-        "Push Ups",
-        "pushup.gif",
-        Color(0xff005F9C),
-        ExerciseType.PushUps,
-      ),
-    );
-    exerciseList.add(
-      ExerciseDataModel(
-        "Squats",
-        "squat.gif",
-        Color(0xffDF5089),
-        ExerciseType.Squat,
-      ),
-    );
-    exerciseList.add(
-      ExerciseDataModel(
-        "Plank to Downward Dog",
-        "plank.gif",
-        Color(0xffFD8636),
-        ExerciseType.DownwardDogPlank,
-      ),
-    );
-    exerciseList.add(
-      ExerciseDataModel(
-        "Jumping Jack",
-        "jumping.gif",
-        Color(0xff000000),
-        ExerciseType.JumpingJack,
-      ),
-    );
-    setState(() {
-      exerciseList;
-    });
-  }
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    loadData();
-    initUserAndCoins();
-  }
-
   int coinCount = 0;
   User? user;
 
-  void initUserAndCoins() async {
+  @override
+  void initState() {
+    super.initState();
+    initUserAndCoins();
+  }
+
+  Future<void> initUserAndCoins() async {
     user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
       if (doc.exists && doc.data()!.containsKey('coins')) {
-        setState(() {
-          coinCount = doc['coins'];
-        });
+        setState(() => coinCount = doc['coins']);
       }
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-
-    void earnCoin() async {
-      setState(() {
-        coinCount++;
-      });
-
-      if (user != null) {
-        await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
-          'coins': coinCount,
-        }, SetOptions(merge: true)); // merge so other fields stay
-      }
+  void earnCoin() async {
+    setState(() => coinCount++);
+    if (user != null) {
+      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set(
+        {'coins': coinCount},
+        SetOptions(merge: true),
+      );
     }
+  }
 
-    return Scaffold(
-      appBar: AppBar(title: Text('Fitness Apps')),
-      body: Stack(
+  // ---------- MIXED WORKOUT ONLY ----------
+
+  WorkoutSequence _quickMix() {
+    return const WorkoutSequence(
+      name: 'Quick Mix',
+      steps: [
+        ExerciseStep(
+          type: ExerciseType.PushUps,
+          targetReps: 5,
+          title: 'Push Ups',
+          image: 'pushup.gif',
+          color: Color(0xff005F9C),
+        ),
+        ExerciseStep(
+          type: ExerciseType.Squat,
+          targetReps: 10,
+          title: 'Squats',
+          image: 'squat.gif',
+          color: Color(0xffDF5089),
+        ),
+        ExerciseStep(
+          type: ExerciseType.JumpingJack,
+          targetReps: 7,
+          title: 'Jumping Jack',
+          image: 'jumping.gif',
+          color: Color(0xff000000),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _startSequence(WorkoutSequence seq) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetectionScreen(
+          sequence: seq,     // <-- only mixed workout path
+          onEarnCoin: earnCoin,
+        ),
+      ),
+    );
+  }
+
+  Widget _mixCard(BuildContext context) {
+    final seq = _quickMix();
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade900,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Main Column content
-          Column(
+          // Header
+          Row(
             children: [
-              Expanded(
-                child: ListView.builder(
-                  itemCount: exerciseList.length,
-                  itemBuilder: (context, index) {
-                    return InkWell(
-                      onTap: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetectionScreen(
-                              exerciseDataModel: exerciseList[index],
-                              onEarnCoin: earnCoin,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: exerciseList[index].color,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        height: 150,
-                        margin: EdgeInsets.all(10),
-                        padding: EdgeInsets.all(10),
-                        child: Stack(
-                          children: [
-                            Align(
-                              alignment: Alignment.bottomLeft,
-                              child: Text(
-                                exerciseList[index].title,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Image.asset(
-                                'assets/${exerciseList[index].image}',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+              const Icon(Icons.fitness_center, color: Colors.white70),
+              const SizedBox(width: 8),
+              Text(
+                seq.name,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              // (Optional) total reps tag
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Total ${seq.steps.fold<int>(0, (s, e) => s + e.targetReps)} reps',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Steps preview
+          for (final step in seq.steps) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: step.color.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: step.color.withOpacity(0.5), width: 1),
+              ),
+              child: Row(
+                children: [
+                  // Thumb
+                  if (step.image.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        'assets/${step.image}',
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  if (step.image.isNotEmpty) const SizedBox(width: 12),
+
+                  // Title + reps
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          step.title.isNotEmpty ? step.title : step.type.name,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${step.targetReps} reps',
+                          style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 4),
+
+          // Start button
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => _startSequence(seq),
+              child: const Text(
+                'Start Quick Mix',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Fitness Apps')),
+      body: Stack(
+        children: [
+          // CONTENT: Mix-only UI
+          ListView(
+            children: [
+              _mixCard(context),
+
+              // Farming Simulation (kept)
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: InkWell(
                   onTap: () {
                     Navigator.push(
@@ -172,7 +231,6 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                         ),
                       ),
                     );
-
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
@@ -183,13 +241,10 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.center,
-                    child: Text(
+                    child: const Text(
                       'Farming Simulation',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -197,12 +252,12 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
             ],
           ),
 
-          // Top-right coin counter (valid only inside Stack)
+          // Coin counter
           Positioned(
             top: 16,
             right: 16,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(30),
@@ -212,18 +267,11 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                 children: [
                   Text(
                     '$coinCount',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
-                  SizedBox(width: 6),
-                  Image.asset(
-                    'assets/coin.png',
-                    width: 24,
-                    height: 24,
-                  ),
+                  const SizedBox(width: 6),
+                  Image.asset('assets/coin.png', width: 24, height: 24),
                 ],
               ),
             ),
@@ -233,3 +281,4 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
     );
   }
 }
+

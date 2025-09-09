@@ -1,4 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fit_farm/view/profile/contact-us.dart';
+import 'package:fit_farm/view/profile/personal_data.dart';
+import 'package:fit_farm/view/profile/policy.dart';
 import 'package:flutter/material.dart';
 
 import '../../common/colo_extension.dart';
@@ -39,8 +43,11 @@ class _ProfileViewState extends State<ProfileView> {
     {"image": "assets/img/p_privacy.png", "name": "Privacy Policy", "tag": "6"},
     {"image": "assets/img/p_setting.png", "name": "Setting", "tag": "7"},
   ];
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: TColor.white,
@@ -74,311 +81,362 @@ class _ProfileViewState extends State<ProfileView> {
         ],
       ),
       backgroundColor: TColor.white,
-      body: SingleChildScrollView(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final data = snapshot.data!.data() as Map<String, dynamic>?;
+
+          if (data == null) {
+            return const Center(child: Text("No profile data found"));
+          }
+
+          final displayName = data['first_name'] + " " + data['last_name']?? "Unknown User";
+          final program = data['program'] ?? "No program";
+          final height = data['height'] ?? "---";
+          final weight = data['weight'] ?? "---";
+          final dob = data['dob'] ?? '';
+          String ageText = "---";
+
+          // ✅ Tính tuổi từ ngày sinh (dob)
+          if (dob.isNotEmpty) {
+            try {
+              DateTime birthDate = DateTime.parse(dob);
+              final today = DateTime.now();
+              int age = today.year - birthDate.year;
+              if (today.month < birthDate.month ||
+                  (today.month == birthDate.month && today.day < birthDate.day)) {
+                age--;
+              }
+              ageText = "$age yo";
+            } catch (e) {
+              ageText = dob; // nếu dob không parse được thì hiển thị raw dob
+            }
+          }
+
+          return SingleChildScrollView(
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: Image.asset(
-                      "assets/img/u2.png",
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                    ),
+                  Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: Image.asset(
+                          "assets/img/u2.png",
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              displayName,
+                              style: TextStyle(
+                                color: TColor.black,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            // Text(
+                            //   program,
+                            //   style: TextStyle(
+                            //     color: TColor.gray,
+                            //     fontSize: 12,
+                            //   ),
+                            // )
+                          ],
+                        ),
+                      ),
+                      // SizedBox(
+                      //   width: 70,
+                      //   height: 25,
+                      //   child: RoundButton(
+                      //     title: "Edit",
+                      //     type: RoundButtonType.bgGradient,
+                      //     fontSize: 12,
+                      //     fontWeight: FontWeight.w400,
+                      //     onPressed: () {
+                      //       // TODO: thêm màn hình edit profile
+                      //     },
+                      //   ),
+                      // )
+                    ],
                   ),
-                  const SizedBox(
-                    width: 15,
+                  const SizedBox(height: 15),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TitleSubtitleCell(
+                          title: "${height}cm",
+                          subtitle: "Height",
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: TitleSubtitleCell(
+                          title: "${weight}kg",
+                          subtitle: "Weight",
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: TitleSubtitleCell(
+                          title: ageText,
+                          subtitle: "Birth Date",
+                        ),
+                      ),
+                    ],
                   ),
-                  Expanded(
+                  const SizedBox(height: 25),
+                  // Account Section
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 15),
+                    decoration: BoxDecoration(
+                        color: TColor.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 2)
+                        ]),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Stefani Wong",
+                          "Account",
                           style: TextStyle(
                             color: TColor.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        Text(
-                          "Lose a Fat Program",
-                          style: TextStyle(
-                            color: TColor.gray,
-                            fontSize: 12,
-                          ),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: accountArr.length,
+                          itemBuilder: (context, index) {
+                            var iObj = accountArr[index] as Map? ?? {};
+                            return SettingRow(
+                              icon: iObj["image"].toString(),
+                              title: iObj["name"].toString(),
+                              onPressed: () {
+                                if (iObj["name"] == "Personal Data") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProfileDataView(),
+            ),
+          );
+        } else {
+          // TODO: xử lý cho các mục khác như Achievement, Activity...
+        }
+                              },
+                            );
+                          },
                         )
                       ],
                     ),
                   ),
-                  SizedBox(
-                    width: 70,
-                    height: 25,
-                    child: RoundButton(
-                      title: "Edit",
-                      type: RoundButtonType.bgGradient,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      onPressed: () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => const ActivityTrackerView(),
-                        //   ),
-                        // );
-                      },
+                  const SizedBox(height: 25),
+                  // Notification Section
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 15),
+                    decoration: BoxDecoration(
+                        color: TColor.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 2)
+                        ]),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Notification",
+                          style: TextStyle(
+                            color: TColor.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 30,
+                          child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Image.asset("assets/img/p_notification.png",
+                                    height: 15,
+                                    width: 15,
+                                    fit: BoxFit.contain),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  child: Text(
+                                    "Pop-up Notification",
+                                    style: TextStyle(
+                                      color: TColor.black,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                CustomAnimatedToggleSwitch<bool>(
+                                  current: positive,
+                                  values: [false, true],
+                                  dif: 0.0,
+                                  indicatorSize: Size.square(30.0),
+                                  animationDuration:
+                                      const Duration(milliseconds: 200),
+                                  animationCurve: Curves.linear,
+                                  onChanged: (b) =>
+                                      setState(() => positive = b),
+                                  iconBuilder: (context, local, global) {
+                                    return const SizedBox();
+                                  },
+                                  defaultCursor: SystemMouseCursors.click,
+                                  onTap: () =>
+                                      setState(() => positive = !positive),
+                                  iconsTappable: false,
+                                  wrapperBuilder: (context, global, child) {
+                                    return Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Positioned(
+                                            left: 10.0,
+                                            right: 10.0,
+                                            height: 30.0,
+                                            child: DecoratedBox(
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                    colors: TColor.secondaryG),
+                                                borderRadius:
+                                                    const BorderRadius.all(
+                                                        Radius.circular(50.0)),
+                                              ),
+                                            )),
+                                        child,
+                                      ],
+                                    );
+                                  },
+                                  foregroundIndicatorBuilder:
+                                      (context, global) {
+                                    return SizedBox.fromSize(
+                                      size: const Size(10, 10),
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: TColor.white,
+                                          borderRadius:
+                                              const BorderRadius.all(
+                                                  Radius.circular(50.0)),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                                color: Colors.black38,
+                                                spreadRadius: 0.05,
+                                                blurRadius: 1.1,
+                                                offset: Offset(0.0, 0.8))
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ]),
+                        )
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                  // Other Section + Logout
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 15),
+                    decoration: BoxDecoration(
+                        color: TColor.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 2)
+                        ]),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Other",
+                          style: TextStyle(
+                            color: TColor.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: otherArr.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == otherArr.length) {
+                              return SettingRow(
+                                icon: "assets/img/p_logout.png",
+                                title: "Logout",
+                                onPressed: () async {
+                                  await FirebaseAuth.instance.signOut();
+
+                                  if (!context.mounted) return;
+
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => const LoginView()),
+                                  );
+                                },
+                              );
+                            }
+
+                            var iObj = otherArr[index] as Map? ?? {};
+                            return SettingRow(
+                              icon: iObj["image"].toString(),
+                              title: iObj["name"].toString(),
+                              onPressed: () {
+                                if (iObj["tag"] == "5") {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const ContactUsView()),
+                                  );
+                                } else if (iObj["tag"] == "6") {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const PrivacyPolicyView()),
+                                  );
+                                }
+                              },
+                            );
+                          },
+                        )
+                      ],
                     ),
                   )
                 ],
               ),
-              const SizedBox(
-                height: 15,
-              ),
-              const Row(
-                children: [
-                  Expanded(
-                    child: TitleSubtitleCell(
-                      title: "180cm",
-                      subtitle: "Height",
-                    ),
-                  ),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  Expanded(
-                    child: TitleSubtitleCell(
-                      title: "65kg",
-                      subtitle: "Weight",
-                    ),
-                  ),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  Expanded(
-                    child: TitleSubtitleCell(
-                      title: "22yo",
-                      subtitle: "Age",
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 25,
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                decoration: BoxDecoration(
-                    color: TColor.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 2)
-                    ]),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Account",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 8,
-                    ),
-                    ListView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: accountArr.length,
-                      itemBuilder: (context, index) {
-                        var iObj = accountArr[index] as Map? ?? {};
-                        return SettingRow(
-                          icon: iObj["image"].toString(),
-                          title: iObj["name"].toString(),
-                          onPressed: () {},
-                        );
-                      },
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(
-                height: 25,
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                decoration: BoxDecoration(
-                    color: TColor.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 2)
-                    ]),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Notification",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 8,
-                    ),
-                    SizedBox(
-                      height: 30,
-                      child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Image.asset("assets/img/p_notification.png",
-                                height: 15, width: 15, fit: BoxFit.contain),
-                            const SizedBox(
-                              width: 15,
-                            ),
-                            Expanded(
-                              child: Text(
-                                "Pop-up Notification",
-                                style: TextStyle(
-                                  color: TColor.black,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            CustomAnimatedToggleSwitch<bool>(
-                              current: positive,
-                              values: [false, true],
-                              dif: 0.0,
-                              indicatorSize: Size.square(30.0),
-                              animationDuration:
-                                  const Duration(milliseconds: 200),
-                              animationCurve: Curves.linear,
-                              onChanged: (b) => setState(() => positive = b),
-                              iconBuilder: (context, local, global) {
-                                return const SizedBox();
-                              },
-                              defaultCursor: SystemMouseCursors.click,
-                              onTap: () => setState(() => positive = !positive),
-                              iconsTappable: false,
-                              wrapperBuilder: (context, global, child) {
-                                return Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Positioned(
-                                        left: 10.0,
-                                        right: 10.0,
-                                        
-                                        height: 30.0,
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                             gradient: LinearGradient(
-                                                colors: TColor.secondaryG),
-                                            borderRadius:
-                                                const BorderRadius.all(
-                                                    Radius.circular(50.0)),
-                                          ),
-                                        )),
-                                    child,
-                                  ],
-                                );
-                              },
-                              foregroundIndicatorBuilder: (context, global) {
-                                return SizedBox.fromSize(
-                                  size: const Size(10, 10),
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: TColor.white,
-                                      borderRadius: const BorderRadius.all(
-                                          Radius.circular(50.0)),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                            color: Colors.black38,
-                                            spreadRadius: 0.05,
-                                            blurRadius: 1.1,
-                                            offset: Offset(0.0, 0.8))
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ]),
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(
-                height: 25,
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                decoration: BoxDecoration(
-                    color: TColor.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 2)
-                    ]),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Other",
-                      style: TextStyle(
-                        color: TColor.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 8,
-                    ),
-                    ListView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      shrinkWrap: true,
-                      itemCount: otherArr.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == otherArr.length) {
-                          return SettingRow(
-                            icon: "assets/img/p_logout.png", // Use your own logout icon
-                            title: "Logout",
-                            onPressed: () async {
-                              await FirebaseAuth.instance.signOut();
-
-                              if (!context.mounted) return;
-
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => const LoginView()),
-                              );
-                            },
-                          );
-                        }
-
-                        var iObj = otherArr[index] as Map? ?? {};
-                        return SettingRow(
-                          icon: iObj["image"].toString(),
-                          title: iObj["name"].toString(),
-                          onPressed: () {},
-                        );
-                      },
-                    )
-                  ],
-                ),
-              )
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
