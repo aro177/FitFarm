@@ -254,7 +254,7 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
 
           // Coin counter
           Positioned(
-            top: 16,
+            top: 10,
             right: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

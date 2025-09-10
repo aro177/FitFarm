@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fit_farm/view/profile/contact-us.dart';
 import 'package:fit_farm/view/profile/personal_data.dart';
 import 'package:fit_farm/view/profile/policy.dart';
+import 'package:fit_farm/view/profile/premium.dart';
 import 'package:flutter/material.dart';
 
 import '../../common/colo_extension.dart';
@@ -25,7 +26,7 @@ class _ProfileViewState extends State<ProfileView> {
 
   List accountArr = [
     {"image": "assets/img/p_personal.png", "name": "Personal Data", "tag": "1"},
-    {"image": "assets/img/p_achi.png", "name": "Achievement", "tag": "2"},
+    {"image": "assets/img/p_achi.png", "name": "Premium", "tag": "2"},
     {
       "image": "assets/img/p_activity.png",
       "name": "Activity History",
@@ -241,8 +242,16 @@ class _ProfileViewState extends State<ProfileView> {
               builder: (context) => const ProfileDataView(),
             ),
           );
-        } else {
+        } else if (iObj["tag"] == "2") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PremiumView(),
+            ),
+          );
+        } else{
           // TODO: xử lý cho các mục khác như Achievement, Activity...
+
         }
                               },
                             );
