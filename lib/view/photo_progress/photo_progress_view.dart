@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../common/colo_extension.dart';
 import '../../common_widget/round_button.dart';
@@ -12,26 +13,72 @@ class PhotoProgressView extends StatefulWidget {
 }
 
 class _PhotoProgressViewState extends State<PhotoProgressView> {
-  List photoArr = [
+  // Chỉ sử dụng 8 sản phẩm từ các link được cung cấp
+  List productArr = [
     {
-      "time": "2 June",
-      "photo": [
-        "assets/img/pp_1.png",
-        "assets/img/pp_2.png",
-        "assets/img/pp_3.png",
-        "assets/img/pp_4.png",
+      "category": "Fitness Equipment",
+      "products": [
+        {
+          "name": "Premium Yoga Mat",
+          "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=400&fit=crop",
+          "shopee_link": "https://s.shopee.vn/70AdW0YRBw"
+        },
+        {
+          "name": "Professional Dumbbell Set",
+          "image": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop",
+          "shopee_link": "https://s.shopee.vn/3Axux0463z"
+        },
+        {
+          "name": "Resistance Bands Pack",
+          "image": "https://images.unsplash.com/photo-1598974357801-cbca100e65d3?w=400&h=400&fit=crop",
+          "shopee_link": "https://s.shopee.vn/8zvhtkkvoq"
+        },
+        {
+          "name": "Speed Jump Rope",
+          "image": "https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?w=400&h=400&fit=crop",
+          "shopee_link": "https://s.shopee.vn/7pjkVcy2l2"
+        },
       ]
     },
     {
-      "time": "5 May",
-      "photo": [
-        "assets/img/pp_5.png",
-        "assets/img/pp_6.png",
-        "assets/img/pp_7.png",
-        "assets/img/pp_8.png",
+      "category": "Fitness Accessories",
+      "products": [
+        {
+          "name": "Exercise Ball",
+          "image": "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=400&h=400&fit=crop",
+          "shopee_link": "https://s.shopee.vn/2ViE9shwiH"
+        },
+        {
+          "name": "Foam Roller",
+          "image": "https://images.unsplash.com/photo-1574680178050-55c6a6a96e0a?w=400&h=400&fit=crop",
+          "shopee_link": "https://s.shopee.vn/8zvhtriAle"
+        },
+      ]
+    },
+    {
+      "category": "Nutrition Supplements",
+      "products": [
+        {
+          "name": "Whey Protein",
+          "image": "https://images.unsplash.com/photo-1597074866923-dc0589150358?w=400&h=400&fit=crop",
+          "shopee_link": "https://s.shopee.vn/5pyg84cIoT"
+        },
+        {
+          "name": "Pre-workout Booster",
+          "image": "https://images.unsplash.com/photo-1599058917765-a780eda07a3e?w=400&h=400&fit=crop",
+          "shopee_link": "https://s.shopee.vn/2LOnxf29AP"
+        },
       ]
     }
   ];
+
+  // Function to open Shopee link
+  Future<void> _launchShopeeUrl(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,32 +88,26 @@ class _PhotoProgressViewState extends State<PhotoProgressView> {
         backgroundColor: TColor.white,
         centerTitle: true,
         elevation: 0,
-        leadingWidth: 0,
-        leading: const SizedBox(),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: TColor.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         title: Text(
-          "Progress Photo",
+          "Fitness Store",
           style: TextStyle(
-              color: TColor.black, fontSize: 16, fontWeight: FontWeight.w700),
+              color: TColor.black, fontSize: 18, fontWeight: FontWeight.w700),
         ),
         actions: [
-          InkWell(
-            onTap: () {},
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              height: 40,
-              width: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                  color: TColor.lightGray,
-                  borderRadius: BorderRadius.circular(10)),
-              child: Image.asset(
-                "assets/img/more_btn.png",
-                width: 15,
-                height: 15,
-                fit: BoxFit.contain,
-              ),
-            ),
-          )
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.search, color: TColor.black, size: 24),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.notifications_none, color: TColor.black, size: 24),
+          ),
         ],
       ),
       backgroundColor: TColor.white,
@@ -74,270 +115,281 @@ class _PhotoProgressViewState extends State<PhotoProgressView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                  child: Container(
-                    width: double.maxFinite,
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                        color: const Color(0xffFFE5E5),
-                        borderRadius: BorderRadius.circular(20)),
-                    child: Row(
+            // Header với banner đẹp
+            Container(
+              width: media.width,
+              height: media.width * 0.5,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    TColor.primaryColor1.withOpacity(0.8),
+                    TColor.primaryColor2.withOpacity(0.8)
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(25),
+                  bottomRight: Radius.circular(25),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -30,
+                    bottom: -30,
+                    child: Opacity(
+                      opacity: 0.1,
+                      child: Icon(Icons.fitness_center, size: 150, color: TColor.white),
+                    ),
+                  ),
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                              color: TColor.white,
-                              borderRadius: BorderRadius.circular(30)),
-                          width: 50,
-                          height: 50,
-                          alignment: Alignment.center,
-                          child: Image.asset(
-                            "assets/img/date_notifi.png",
-                            width: 30,
-                            height: 30,
+                        Text(
+                          "FITNESS STORE",
+                          style: TextStyle(
+                            color: TColor.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
                           ),
                         ),
-                        const SizedBox(
-                          width: 8,
-                        ),
-                        Expanded(
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Reminder!",
-                                  style: TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500),
-                                ),
-                                Text(
-                                  "Next Photos Fall On July 08",
-                                  style: TextStyle(
-                                      color: TColor.black,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700),
-                                ),
-                              ]),
-                        ),
-                        Container(
-                            height: 60,
-                            alignment: Alignment.topRight,
-                            child: IconButton(
-                                onPressed: () {},
-                                icon: Icon(
-                                  Icons.close,
-                                  color: TColor.gray,
-                                  size: 15,
-                                )))
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                  child: Container(
-                    width: double.maxFinite,
-                    padding: const EdgeInsets.all(20),
-                    height: media.width * 0.4,
-                    decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [
-                          TColor.primaryColor2.withOpacity(0.4),
-                          TColor.primaryColor1.withOpacity(0.4)
-                        ]),
-                        borderRadius: BorderRadius.circular(20)),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(
-                                height: 15,
-                              ),
-                              Text(
-                                "Track Your Progress Each\nMonth With Photo",
-                                style: TextStyle(
-                                  color: TColor.black,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const Spacer(),
-                              SizedBox(
-                                width: 110,
-                                height: 35,
-                                child: RoundButton(
-                                    title: "Learn More",
-                                    fontSize: 12,
-                                    onPressed: () {}),
-                              )
-                            ]),
-                        Image.asset(
-                          "assets/img/progress_each_photo.png",
-                          width: media.width * 0.35,
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: media.width * 0.05,
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-                  decoration: BoxDecoration(
-                    color: TColor.primaryColor2.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Compare my Photo",
-                        style: TextStyle(
-                            color: TColor.black,
+                        SizedBox(height: 8),
+                        Text(
+                          "Premium equipment for your journey",
+                          style: TextStyle(
+                            color: TColor.white.withOpacity(0.9),
                             fontSize: 14,
-                            fontWeight: FontWeight.w500),
-                      ),
-                      SizedBox(
-                        width: 100,
-                        height: 25,
-                        child: RoundButton(
-                          title: "Compare",
-                          type: RoundButtonType.bgGradient,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const ComparisonView(),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Gallery",
-                        style: TextStyle(
-                            color: TColor.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700),
-                      ),
-                      TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            "See more",
-                            style: TextStyle(color: TColor.gray, fontSize: 12),
-                          ))
-                    ],
-                  ),
-                ),
-                ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemCount: photoArr.length,
-                    itemBuilder: ((context, index) {
-                      var pObj = photoArr[index] as Map? ?? {};
-                      var imaArr = pObj["photo"] as List? ?? [];
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              pObj["time"].toString(),
-                              style:
-                                  TextStyle(color: TColor.gray, fontSize: 12),
-                            ),
                           ),
-                          SizedBox(
-                            height: 100,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: EdgeInsets.zero,
-                              itemCount: imaArr.length,
-                              itemBuilder: ((context, indexRow) {
-                                return Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 4),
-                                  width: 100,
-                                  decoration: BoxDecoration(
-                                    color: TColor.lightGray,
-                                    borderRadius: BorderRadius.circular(10),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 20),
+                        Container(
+                          width: 140,
+                          height: 40,
+                          child: RoundButton(
+                            title: "Shop Now",
+                            onPressed: () {
+                              _launchShopeeUrl("https://s.shopee.vn/70AdW0YRBw");
+                            },
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 20),
+
+            // Danh mục sản phẩm
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                "Shop by Category",
+                style: TextStyle(
+                  color: TColor.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 15),
+
+            // Grid danh mục
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildCategoryItem("Equipment", Icons.fitness_center, TColor.primaryColor1),
+                  _buildCategoryItem("Accessories", Icons.sports_handball, TColor.secondaryColor1),
+                  _buildCategoryItem("Nutrition", Icons.local_drink, TColor.primaryColor2),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 25),
+
+            // Sản phẩm nổi bật
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Featured Products",
+                    style: TextStyle(
+                      color: TColor.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                   
+                ],
+              ),
+            ),
+
+            // Danh sách sản phẩm
+            ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: productArr.length,
+              itemBuilder: ((context, index) {
+                var pObj = productArr[index] as Map? ?? {};
+                var productsArr = pObj["products"] as List? ?? [];
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        pObj["category"].toString(),
+                        style: TextStyle(
+                          color: TColor.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 150,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: EdgeInsets.zero,
+                        itemCount: productsArr.length,
+                        physics: const BouncingScrollPhysics(),
+                        itemBuilder: ((context, indexRow) {
+                          var product = productsArr[indexRow] as Map? ?? {};
+                          return InkWell(
+                            onTap: () {
+                              _launchShopeeUrl(product["shopee_link"] as String? ?? "");
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              width: 120,
+                              decoration: BoxDecoration(
+                                color: TColor.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
                                   ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.asset(
-                                      imaArr[indexRow] as String? ?? "",
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Hình ảnh sản phẩm
+                                  Container(
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      color: TColor.lightGray,
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(16),
+                                        topRight: Radius.circular(16),
+                                      ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(16),
+                                        topRight: Radius.circular(16),
+                                      ),
+                                      child: Image.network(
+                                        product["image"] as String? ?? "",
+                                        width: 120,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder: (BuildContext context, Widget child,
+                                            ImageChunkEvent? loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded /
+                                                      loadingProgress.expectedTotalBytes!
+                                                  : null,
+                                              color: TColor.primaryColor1,
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            color: TColor.lightGray,
+                                            child: Icon(Icons.error, color: TColor.gray),
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ),
-                                );
-                              }),
+                                  
+                                  // Tên sản phẩm
+                                  Padding(
+                                    padding: const EdgeInsets.all(6.0),
+                                    child: Text(
+                                      product["name"] as String? ?? "",
+                                      style: TextStyle(
+                                        color: TColor.black,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      );
-                    }))
-              ],
-            ),
-            SizedBox(
-              height: media.width * 0.05,
+                          );
+                        }),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                  ],
+                );
+              }),
             ),
           ],
         ),
       ),
-      floatingActionButton: InkWell(
-        onTap: () {
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder: (context) => SleepAddAlarmView(
-          //       date: _selectedDateAppBBar,
-          //     ),
-          //   ),
-          // );
-        },
-        child: Container(
-          width: 55,
-          height: 55,
+      
+       
+    );
+  }
+
+  // Widget xây dựng danh mục
+  Widget _buildCategoryItem(String title, IconData icon, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 70,
+          height: 70,
           decoration: BoxDecoration(
-              gradient: LinearGradient(colors: TColor.secondaryG),
-              borderRadius: BorderRadius.circular(27.5),
-              boxShadow: const [
-                BoxShadow(
-                    color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))
-              ]),
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.photo_camera,
-            size: 20,
-            color: TColor.white,
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Icon(icon, color: color, size: 30),
+        ),
+        SizedBox(height: 8),
+        Text(
+          title,
+          style: TextStyle(
+            color: TColor.black,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
         ),
-      ),
+      ],
     );
   }
 }
