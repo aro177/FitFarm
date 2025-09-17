@@ -1,7 +1,7 @@
-import 'package:fit_farm/in_app_purchase/in_app_purchase.dart';
+import 'package:fit_farm/view/profile/qr_payment.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PremiumView extends StatefulWidget {
   const PremiumView({super.key});
@@ -11,138 +11,236 @@ class PremiumView extends StatefulWidget {
 }
 
 class _PremiumViewState extends State<PremiumView> {
-  bool isPremium = true;
-  DateTime? premiumEndDate;
+  final User? user = FirebaseAuth.instance.currentUser;
+  Map<String, dynamic>? userData;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    InAppPurchaseUtils.IAP.initialize(); // fake init IAP
+    _fetchUserData();
   }
 
-  String getPremiumInfo() {
-    if (!isPremium) return "You are not a Premium member yet.";
-    if (premiumEndDate == null) return "Premium status unknown.";
-    final now = DateTime.now();
-    final diff = premiumEndDate!.difference(now).inDays;
-    if (diff > 0) {
-      return "Premium active • $diff days left\nExpires on ${DateFormat('dd/MM/yyyy').format(premiumEndDate!)}";
+  Future<void> _fetchUserData() async {
+    if (user != null) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .get();
+            
+        if (doc.exists) {
+          setState(() {
+            userData = doc.data() as Map<String, dynamic>;
+            isLoading = false;
+          });
+        }
+      } catch (e) {
+        print("Error fetching user data: $e");
+        setState(() {
+          isLoading = false;
+        });
+      }
     } else {
-      return "Your Premium has expired.";
+      setState(() {
+        isLoading = false;
+      });
     }
-  }
-
-  void activatePremium(int months) {
-    final now = DateTime.now();
-    setState(() {
-      isPremium = true;
-      premiumEndDate = now.add(Duration(days: 30 * months));
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final iap = InAppPurchaseUtils.IAP;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Premium Membership"),
-        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Obx(() {
-          if (!iap.isAvailable.value) {
-            return const Center(child: Text("Store not available"));
-          }
-          if (iap.products.isEmpty) {
-            return const Center(child: Text("No Premium products found"));
-          }
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: _buildContent(),
+            ),
+    );
+  }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              Icon(Icons.workspace_premium,
-                  size: 90, color: Colors.amber.shade700),
-              const SizedBox(height: 20),
-              Text(getPremiumInfo(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w500)),
-              const SizedBox(height: 40),
+  Widget _buildContent() {
+    final isPremium = userData?['isPremium'] == true;
+    final premiumExpiry = userData?['premiumExpiry'] as Timestamp?;
+    final premiumActivated = userData?['premiumActivated'] as Timestamp?;
 
-              if (!isPremium) ...[
-                const Text("Choose your Premium plan",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                ...iap.products.map((product) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () async {
-                        await iap.buy(product);
-                        // Fake activate (sau này thay bằng verify backend)
-                        if (product.id == 'premium_1month') {
-                          activatePremium(1);
-                        } else if (product.id == 'premium_3month') {
-                          activatePremium(3);
-                        } else if (product.id == 'premium_6month') {
-                          activatePremium(6);
-                        } else if (product.id == 'premium_12month') {
-                          activatePremium(12);
-                        }
-                      },
-                      child: Text(
-                          "${product.title} - ${product.price}",
-                          style: const TextStyle(fontSize: 16)),
-                    ),
-                  );
-                })
-              ] else ...[
-                Card(
-                  margin: const EdgeInsets.only(top: 30),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        const Text("Enjoy your Premium benefits!",
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            minimumSize: const Size.fromHeight(45),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              isPremium = false;
-                              premiumEndDate = null;
-                            });
-                          },
-                          child: const Text("Cancel Premium (Test Mode)"),
-                        ),
-                      ],
+    if (isPremium && premiumExpiry != null) {
+      // Người dùng đã có premium - hiển thị thông tin
+      final expiryDate = premiumExpiry.toDate();
+      final activatedDate = premiumActivated?.toDate();
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(
+            Icons.verified_user,
+            size: 80,
+            color: Colors.green,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "You are a Premium Member!",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Card(
+            elevation: 4,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Membership Details",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                )
-              ]
-            ],
-          );
-        }),
+                  const SizedBox(height: 16),
+                  _buildDetailRow("Status", "Active", Icons.check_circle, Colors.green),
+                  if (activatedDate != null)
+                    _buildDetailRow("Activated on", _formatDate(activatedDate), Icons.calendar_today, Colors.blue),
+                  _buildDetailRow("Expires on", _formatDate(expiryDate), Icons.event_available, Colors.orange),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            "Thank you for being a premium member. Enjoy all the exclusive features!",
+            style: TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          // Thêm nút quay về ProfileView
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text("Back to Profile"),
+          ),
+        ],
+      );
+    } else {
+      // Người dùng chưa có premium - hiển thị các gói để mua
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            "Upgrade to Premium",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "Choose a package that suits your needs:",
+            style: TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRPaymentPage(
+                    premiumDays: 7,
+                    amount: 50000,
+                  ),
+                ),
+              );
+            },
+            child: const Text("7 Days Package - 50,000 VND"),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRPaymentPage(
+                    premiumDays: 30,
+                    amount: 150000,
+                  ),
+                ),
+              );
+            },
+            child: const Text("30 Days Package - 150,000 VND"),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRPaymentPage(
+                    premiumDays: 90,
+                    amount: 400000,
+                  ),
+                ),
+              );
+            },
+            child: const Text("90 Days Package - 400,000 VND"),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            "Premium features include:\n• Advanced analytics\n• Exclusive workouts\n• Personalized coaching\n• Ad-free experience",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          // Thêm nút quay về ProfileView
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text("Back to Profile"),
+          ),
+        ],
+      );
+    }
+  }
+
+  Widget _buildDetailRow(String title, String value, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(color: Colors.grey),
+          ),
+        ],
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return "${date.day}/${date.month}/${date.year}";
   }
 }

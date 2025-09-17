@@ -4,7 +4,7 @@
         
 
     <application
-        android:label="fit_farm"
+        android:label="Fit Farm"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
