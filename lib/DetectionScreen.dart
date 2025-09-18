@@ -117,6 +117,36 @@ class _MyHomePageState extends State<DetectionScreen> {
           case ExerciseType.JumpingJack:
             detectJumpingJack(poses.first, onRep: _onRep);
             break;
+          case ExerciseType.SitUp:
+            detectSitUp(poses.first.landmarks, onRep: _onRep);
+            break;
+          case ExerciseType.LegRaises:
+            detectLegRaise(poses.first.landmarks, onRep: _onRep);
+            break;
+          case ExerciseType.AlternateLegDrops:
+            detectAlternateLegDrops(poses.first.landmarks, onRep: _onRep);
+            break;
+          case ExerciseType.GluteBridge:
+            detectHipThrust(poses.first.landmarks, onRep: _onRep);
+            break;
+          case ExerciseType.Lunges:
+            detectLunge(poses.first.landmarks, onRep: _onRep);
+            break;
+          case ExerciseType.PlankLegRaise:
+            detectPlankLegRaise(poses.first.landmarks, onRep: _onRep);
+            break;
+          case ExerciseType.StandingSideLegKicks:
+            detectSideLegKick(poses.first.landmarks, onRep: _onRep);
+            break;
+          case ExerciseType.Side_lyingLegRaise:
+            detectSideLyingLegRaise(poses.first.landmarks, onRep: _onRep);
+            break;
+          case ExerciseType.StandingKickHand:
+            detectSupportedLegKick(poses.first.landmarks, onRep: _onRep);
+            break;
+          case ExerciseType.PulseSquats:
+            detectPulseSquat(poses.first.landmarks, onRep: _onRep);
+            break;
         }
       }
     }
@@ -269,6 +299,8 @@ class _MyHomePageState extends State<DetectionScreen> {
     );
   }
 
+
+  //Push Up
   bool isLowered = false;
   void detectPushUp(Map<PoseLandmarkType, PoseLandmark> landmarks, {
     required VoidCallback onRep,
@@ -324,6 +356,7 @@ class _MyHomePageState extends State<DetectionScreen> {
     }
   }
 
+  //Squats
   bool isSquatting = false;
   void detectSquat(Map<PoseLandmarkType, PoseLandmark> landmarks, {
     required VoidCallback onRep,
@@ -368,6 +401,7 @@ class _MyHomePageState extends State<DetectionScreen> {
     }
   }
 
+  //Plank to downward Dog
   bool isInDownwardDog = false;
   void detectPlankToDownwardDog(Pose pose, {
     required VoidCallback onRep,
@@ -415,6 +449,7 @@ class _MyHomePageState extends State<DetectionScreen> {
     }
   }
 
+  //Jumping Jack
   bool isJumping = false;
   bool isJumpingJackOpen = false;
   void detectJumpingJack(Pose pose, {
@@ -462,6 +497,251 @@ class _MyHomePageState extends State<DetectionScreen> {
     } else if (!armsUp && !legsApart && isJumpingJackOpen) {
       onRep();
       isJumpingJackOpen = false;
+    }
+  }
+
+  //Sit Up
+  bool sitUpDown = false;
+
+  void detectSitUp(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final hip   = lm[PoseLandmarkType.leftHip] ?? lm[PoseLandmarkType.rightHip];
+    final shoulder = lm[PoseLandmarkType.leftShoulder] ?? lm[PoseLandmarkType.rightShoulder];
+    final knee  = lm[PoseLandmarkType.leftKnee] ?? lm[PoseLandmarkType.rightKnee];
+
+    if (hip == null || shoulder == null || knee == null) return;
+
+    final angle = calculateAngle(shoulder, hip, knee); // torso to leg
+    // lying down = ~180, sitting up = ~60–80
+    if (angle < 100) {
+      // up
+      if (!sitUpDown) sitUpDown = true;
+    } else if (angle > 150 && sitUpDown) {
+      // full cycle (up -> down)
+      onRep();
+      sitUpDown = false;
+    }
+  }
+
+  //Leg Raises
+  bool legRaised = false;
+
+  void detectLegRaise(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final hip   = lm[PoseLandmarkType.leftHip] ?? lm[PoseLandmarkType.rightHip];
+    final knee  = lm[PoseLandmarkType.leftKnee] ?? lm[PoseLandmarkType.rightKnee];
+    final ankle = lm[PoseLandmarkType.leftAnkle] ?? lm[PoseLandmarkType.rightAnkle];
+
+    if (hip == null || knee == null || ankle == null) return;
+
+    final angle = calculateAngle(shoulderOrTorsoPoint(lm), hip, ankle);
+    // when legs lifted up, angle smaller (~60–90), down = ~150–180
+    if (angle < 100) {
+      if (!legRaised) legRaised = true;
+    } else if (angle > 150 && legRaised) {
+      onRep();
+      legRaised = false;
+    }
+  }
+
+// helper: choose midpoint of shoulders
+  PoseLandmark shoulderOrTorsoPoint(Map<PoseLandmarkType, PoseLandmark> lm) {
+    final l = lm[PoseLandmarkType.leftShoulder];
+    final r = lm[PoseLandmarkType.rightShoulder];
+    if (l != null && r != null) {
+      return PoseLandmark(
+        type: PoseLandmarkType.leftShoulder,
+        x: (l.x + r.x) / 2,
+        y: (l.y + r.y) / 2,
+        z: (l.z + r.z) / 2,
+        likelihood: (l.likelihood + r.likelihood) / 2,
+      );
+    }
+    return l ?? r!;
+  }
+
+  //Alternate Leg Drops
+  bool leftLegDown = false;
+  bool rightLegDown = false;
+
+  void detectAlternateLegDrops(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final leftHip = lm[PoseLandmarkType.leftHip];
+    final leftAnkle = lm[PoseLandmarkType.leftAnkle];
+    final rightHip = lm[PoseLandmarkType.rightHip];
+    final rightAnkle = lm[PoseLandmarkType.rightAnkle];
+
+    if (leftHip == null || leftAnkle == null || rightHip == null || rightAnkle == null) return;
+
+    // simple heuristic: compare ankle.y with hip.y (higher y = lower leg in image coords)
+    if (leftAnkle.y > leftHip.y + 50) {
+      if (!leftLegDown) {
+        leftLegDown = true;
+      }
+    } else if (leftLegDown) {
+      onRep(); // left leg cycle complete
+      leftLegDown = false;
+    }
+
+    if (rightAnkle.y > rightHip.y + 50) {
+      if (!rightLegDown) {
+        rightLegDown = true;
+      }
+    } else if (rightLegDown) {
+      onRep(); // right leg cycle complete
+      rightLegDown = false;
+    }
+  }
+
+  //Glute Bridge
+  bool hipDown = false;
+
+  void detectHipThrust(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final shoulder = lm[PoseLandmarkType.leftShoulder] ?? lm[PoseLandmarkType.rightShoulder];
+    final hip      = lm[PoseLandmarkType.leftHip] ?? lm[PoseLandmarkType.rightHip];
+    final knee     = lm[PoseLandmarkType.leftKnee] ?? lm[PoseLandmarkType.rightKnee];
+
+    if (shoulder == null || hip == null || knee == null) return;
+
+    final angle = calculateAngle(shoulder, hip, knee); // ~180 khi hông nâng
+    if (angle < 140) {
+      hipDown = true; // hông hạ
+    } else if (angle > 165 && hipDown) {
+      onRep();        // 1 lần nâng lên
+      hipDown = false;
+    }
+  }
+
+  //Lunges
+  bool lungeDown = false;
+
+  void detectLunge(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final frontHip   = lm[PoseLandmarkType.leftHip] ?? lm[PoseLandmarkType.rightHip];
+    final frontKnee  = lm[PoseLandmarkType.leftKnee] ?? lm[PoseLandmarkType.rightKnee];
+    final frontAnkle = lm[PoseLandmarkType.leftAnkle] ?? lm[PoseLandmarkType.rightAnkle];
+
+    if (frontHip == null || frontKnee == null || frontAnkle == null) return;
+
+    final angle = calculateAngle(frontHip, frontKnee, frontAnkle);
+    if (angle < 100) {
+      lungeDown = true;
+    } else if (angle > 160 && lungeDown) {
+      onRep();
+      lungeDown = false;
+    }
+  }
+
+  //Plank Leg Raise
+  bool leftLegUp = false;
+  bool rightLegUp = false;
+
+  void detectPlankLegRaise(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final leftHip = lm[PoseLandmarkType.leftHip];
+    final leftAnkle = lm[PoseLandmarkType.leftAnkle];
+    final rightHip = lm[PoseLandmarkType.rightHip];
+    final rightAnkle = lm[PoseLandmarkType.rightAnkle];
+
+    if (leftHip == null || leftAnkle == null || rightHip == null || rightAnkle == null) return;
+
+    // trái
+    if (leftAnkle.y < leftHip.y - 30) {
+      if (!leftLegUp) leftLegUp = true;
+    } else if (leftLegUp) {
+      onRep();
+      leftLegUp = false;
+    }
+
+    // phải
+    if (rightAnkle.y < rightHip.y - 30) {
+      if (!rightLegUp) rightLegUp = true;
+    } else if (rightLegUp) {
+      onRep();
+      rightLegUp = false;
+    }
+  }
+
+  //Standing Side Leg Kicks
+  bool leftKickOut = false;
+  bool rightKickOut = false;
+
+  void detectSideLegKick(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final leftHip = lm[PoseLandmarkType.leftHip];
+    final leftAnkle = lm[PoseLandmarkType.leftAnkle];
+    final rightHip = lm[PoseLandmarkType.rightHip];
+    final rightAnkle = lm[PoseLandmarkType.rightAnkle];
+
+    if (leftHip == null || leftAnkle == null || rightHip == null || rightAnkle == null) return;
+
+    // trái
+    if ((leftAnkle.x - leftHip.x).abs() > 80) {
+      if (!leftKickOut) leftKickOut = true;
+    } else if (leftKickOut) {
+      onRep();
+      leftKickOut = false;
+    }
+
+    // phải
+    if ((rightAnkle.x - rightHip.x).abs() > 80) {
+      if (!rightKickOut) rightKickOut = true;
+    } else if (rightKickOut) {
+      onRep();
+      rightKickOut = false;
+    }
+  }
+
+  //Side-lying Leg Raise
+  bool sideLegUp = false;
+
+  void detectSideLyingLegRaise(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final hip   = lm[PoseLandmarkType.leftHip] ?? lm[PoseLandmarkType.rightHip];
+    final ankle = lm[PoseLandmarkType.leftAnkle] ?? lm[PoseLandmarkType.rightAnkle];
+
+    if (hip == null || ankle == null) return;
+
+    // Chân nâng cao hơn hông (theo trục y, lưu ý y tăng xuống dưới màn hình)
+    if (ankle.y < hip.y - 40) {
+      if (!sideLegUp) sideLegUp = true;
+    } else if (ankle.y >= hip.y && sideLegUp) {
+      onRep();
+      sideLegUp = false;
+    }
+  }
+
+  //Standing kick with hand support
+  bool kickForward = false;
+
+  void detectSupportedLegKick(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final hip   = lm[PoseLandmarkType.leftHip] ?? lm[PoseLandmarkType.rightHip];
+    final ankle = lm[PoseLandmarkType.leftAnkle] ?? lm[PoseLandmarkType.rightAnkle];
+
+    if (hip == null || ankle == null) return;
+
+    // Chân đá lên trước (ankle.y < hip.y - threshold)
+    if (ankle.y < hip.y - 30) {
+      if (!kickForward) kickForward = true;
+    } else if (ankle.y >= hip.y && kickForward) {
+      onRep();
+      kickForward = false;
+    }
+  }
+
+  //Pulse Squats
+  bool squatPulseDown = false;
+
+  void detectPulseSquat(Map<PoseLandmarkType, PoseLandmark> lm, {required VoidCallback onRep}) {
+    final hip   = lm[PoseLandmarkType.leftHip] ?? lm[PoseLandmarkType.rightHip];
+    final knee  = lm[PoseLandmarkType.leftKnee] ?? lm[PoseLandmarkType.rightKnee];
+    final ankle = lm[PoseLandmarkType.leftAnkle] ?? lm[PoseLandmarkType.rightAnkle];
+
+    if (hip == null || knee == null || ankle == null) return;
+
+    final angle = calculateAngle(hip, knee, ankle);
+
+    // Nhún xuống (góc nhỏ)
+    if (angle < 100) {
+      squatPulseDown = true;
+    }
+    // Nhún lên trong vùng thấp (góc >120 nhưng chưa đứng hẳn)
+    else if (angle > 120 && angle < 150 && squatPulseDown) {
+      onRep();
+      squatPulseDown = false;
     }
   }
 
