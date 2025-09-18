@@ -37,7 +37,7 @@ dependencies:
   camera: ^0.10.5+9
   google_mlkit_pose_detection: ^0.13.0
   carousel_slider: ^5.1.1
-  fl_chart: ^1.0.0
+  fl_chart: ^1.1.0
   simple_animation_progress_bar: ^1.6.0
   dotted_dashed_line: ^0.0.3
   simple_circular_progress_bar: ^1.0.2
@@ -78,6 +78,7 @@ flutter:
   assets:
       - assets/
       - assets/img/
+      - assets/fitness/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
