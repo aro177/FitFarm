@@ -266,7 +266,7 @@ class _MyHomePageState extends State<DetectionScreen> {
                   Row(
                     children: [
                       if (_step.image.isNotEmpty)
-                        Image.asset('assets/${_step.image}', height: 48),
+                        Image.asset('assets/fitness/${_step.image}', height: 48),
                       const SizedBox(width: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

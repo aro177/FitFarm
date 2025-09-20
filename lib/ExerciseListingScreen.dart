@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:fit_farm/DetectionScreen.dart';
 import 'package:fit_farm/Model/ExerciseDataModel.dart';
 
+import 'ExerciseScheduleScreen.dart';
 import 'farming_simulation/BuyItemScene.dart';
 
 class ExerciseListingScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class ExerciseListingScreen extends StatefulWidget {
 
 class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
   int coinCount = 0;
+  bool isPremium = false;
   User? user;
 
   @override
@@ -30,7 +32,11 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
     if (user != null) {
       final doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
       if (doc.exists && doc.data()!.containsKey('coins')) {
-        setState(() => coinCount = doc['coins']);
+        setState(() {
+          coinCount = doc['coins'];
+          isPremium = doc['isPremium'] ?? false;
+        });
+
       }
     }
   }
@@ -46,6 +52,75 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
   }
 
   // ---------- MIXED WORKOUT ONLY ----------
+
+  final List<ExerciseDataModel> exerciseList = [
+    ExerciseDataModel(
+      "Push Ups",
+      "pushup.gif",
+      const Color(0xff005F9C),
+      ExerciseType.PushUps,
+    ),
+    ExerciseDataModel(
+      "Squats",
+      "squat.gif",
+      const Color(0xffDF5089),
+      ExerciseType.Squat,
+    ),
+    ExerciseDataModel(
+      "Jumping Jack",
+      "jumping.gif",
+      const Color(0xff000000),
+      ExerciseType.JumpingJack,
+    ),
+    ExerciseDataModel(
+      "Sit Ups",
+      "situp.gif",
+      const Color(0xffFF7043),
+      ExerciseType.SitUp,
+    ),
+    ExerciseDataModel(
+      "Leg Raises",
+      "legraises.gif",
+      const Color(0xff3949AB),
+      ExerciseType.LegRaises,
+    ),
+    ExerciseDataModel(
+      "Alternate Leg Drops",
+      "alternateLegDrop.gif",
+      const Color(0xffF57C00),
+      ExerciseType.AlternateLegDrops,
+    ),
+    ExerciseDataModel(
+      "Glute Bridge",
+      "glutebridge.gif",
+      const Color(0xff8E24AA),
+      ExerciseType.GluteBridge,
+    ),
+    ExerciseDataModel(
+      "Lunges",
+      "lunges.gif",
+      const Color(0xffC2185B),
+      ExerciseType.Lunges,
+    ),
+    ExerciseDataModel(
+      "Plank Leg Raise",
+      "planklegraises.gif",
+      const Color(0xff5D4037),
+      ExerciseType.PlankLegRaise,
+    ),
+    ExerciseDataModel(
+      "Side Lying Leg Raise",
+      "side_lyinglegRaise.gif",
+      const Color(0xff00796B),
+      ExerciseType.LegRaises,
+    ),
+    ExerciseDataModel(
+      "Pulse Squats",
+      "pulsesquat.gif",
+      const Color(0xff00796B),
+      ExerciseType.PulseSquats,
+    ),
+  ];
 
   WorkoutSequence _quickMix() {
     return const WorkoutSequence(
@@ -281,17 +356,63 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
       appBar: AppBar(title: const Text('Fitness Apps')),
       body: Stack(
         children: [
-          // CONTENT: Mix-only UI
           ListView(
             children: [
+              // Always available: Quick Mix
               _mixCard(context, _quickMix()),
-              _mixCard(context, _coreAndLegs()),
-              _mixCard(context, _cardioBlast()),
-              _mixCard(context, _plankChallenge()),
 
-              // Farming Simulation (kept)
+              // Premium-only features
+              if (isPremium) ...[
+                _mixCard(context, _coreAndLegs()),
+                _mixCard(context, _cardioBlast()),
+                _mixCard(context, _plankChallenge()),
+
+                // Schedule builder
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ExerciseScheduleScreen(
+                            allExercises: exerciseList,
+                            userId: user!.uid,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text("My Schedule"),
+                  ),
+                ),
+              ] else ...[
+                // Show upsell for non-premium users
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        "Premium Feature",
+                        style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                          "Upgrade to Premium to unlock Schedule Builder and more workouts."),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Farming Simulation stays available
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.all(16.0),
                 child: InkWell(
                   onTap: () {
                     Navigator.push(
@@ -324,7 +445,9 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                     child: const Text(
                       'Farming Simulation',
                       style: TextStyle(
-                          color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -334,7 +457,7 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
 
           // Coin counter
           Positioned(
-            top: 10,
+            top: 16,
             right: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -348,7 +471,9 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                   Text(
                     '$coinCount',
                     style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
                   ),
                   const SizedBox(width: 6),
                   Image.asset('assets/coin.png', width: 24, height: 24),
@@ -360,5 +485,6 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
       ),
     );
   }
+
 }
 
