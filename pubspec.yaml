@@ -55,6 +55,7 @@ dependencies:
 
   in_app_purchase: ^3.2.1
   get : ^4.6.6
+  table_calendar: ^3.0.4
 
   qr_flutter: ^4.1.0
   
