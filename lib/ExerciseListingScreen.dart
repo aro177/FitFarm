@@ -34,10 +34,14 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
       if (doc.exists && doc.data()!.containsKey('coins')) {
         setState(() {
           coinCount = doc['coins'];
+        });
+      }
+      if (doc.exists && doc.data()!.containsKey('isPremium')) {
+        setState(() {
           isPremium = doc['isPremium'] ?? false;
         });
-
       }
+
     }
   }
 
