@@ -7,6 +7,7 @@ import 'package:fit_farm/Model/constants/global_constants.dart';
 import 'package:fit_farm/Model/constants/render_priority.dart';
 import 'package:fit_farm/sprout_valley.dart';
 
+// chinh animation
 class LeavesSprite extends SpriteAnimationComponent
     with HasGameReference<SproutValley>{
 
@@ -29,7 +30,6 @@ class LeavesSprite extends SpriteAnimationComponent
   );
 
   @override
-  // TODO: implement debugMode
   bool get debugMode => false;
 
   @override

@@ -10,8 +10,6 @@ class SproutValley extends FlameGame {
   late CameraComponent cameraComponent;
   late RouterComponent router;
 
-
-
   late TiledComponent farmTiled;
 
   void initBuildContext(BuildContext context) {
