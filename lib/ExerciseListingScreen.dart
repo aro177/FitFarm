@@ -5,8 +5,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fit_farm/DetectionScreen.dart';
 import 'package:fit_farm/Model/ExerciseDataModel.dart';
+import 'package:flame/game.dart';
+import 'farming_simulation/farm_game.dart';
 
-import 'farming_simulation/BuyItemScene.dart';
+//import 'farming_simulation/farm_game.dart';
+import 'sprout_valley.dart';
 
 class ExerciseListingScreen extends StatefulWidget {
   const ExerciseListingScreen({super.key});
@@ -209,7 +212,7 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
             children: [
               _mixCard(context),
 
-              // Farming Simulation (kept)
+              // Farming Simulation (NEW PLACEHOLDER)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: InkWell(
@@ -217,17 +220,16 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => GameWidget(
-                          game: BuyItemGame(),
-                          overlayBuilderMap: {
-                            'BuyOverlay': (context, game) => BuyItemOverlay(
-                              onClose: () {
-                                (game as BuyItemGame).overlays.remove('BuyOverlay');
-                                Navigator.pop(context);
-                              },
-                            ),
-                          },
-                          initialActiveOverlays: const ['BuyOverlay'],
+                        builder: (_) => Scaffold(
+                          body: GameWidget<FarmGame>(
+                            game: FarmGame(),
+                            overlayBuilderMap: {
+                              'FarmOverlay': (_, game) => FarmGameOverlay(
+                                onClose: () => Navigator.pop(context),
+                              ),
+                            },
+                            initialActiveOverlays: const ['FarmOverlay'],
+                          ),
                         ),
                       ),
                     );
@@ -242,7 +244,7 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                     ),
                     alignment: Alignment.center,
                     child: const Text(
-                      'Farming Simulation',
+                      'Farming Game',
                       style: TextStyle(
                           color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                     ),

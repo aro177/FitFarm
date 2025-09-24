@@ -1,25 +1,42 @@
+// lib/farm_game.dart
+
+import 'dart:math';
+
 import 'package:flame/game.dart';
+import 'package:flame_tiled/flame_tiled.dart' as tiled;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class BuyItemGame extends FlameGame {
+class FarmGame extends FlameGame {
   @override
   Future<void> onLoad() async {
-    // Do nothing here — we'll use Flutter overlay
+    await super.onLoad();
+    final map = await tiled.TiledComponent.load(
+      'game/maps/map.tmx',
+      Vector2.all(32),
+    );
+
+    final scaleX = size.x / map.width;
+    final scaleY = size.y / map.height;
+    final scale = min(scaleX, scaleY);
+
+    map.scale = Vector2.all(scale);
+    add(map);
+
   }
 }
 
-class BuyItemOverlay extends StatefulWidget {
+class FarmGameOverlay extends StatefulWidget {
   final VoidCallback onClose;
 
-  const BuyItemOverlay({Key? key, required this.onClose}) : super(key: key);
+  const FarmGameOverlay({Key? key, required this.onClose}) : super(key: key);
 
   @override
-  State<BuyItemOverlay> createState() => _BuyItemOverlayState();
+  State<FarmGameOverlay> createState() => _FarmGameOverlayState();
 }
 
-class _BuyItemOverlayState extends State<BuyItemOverlay> {
+class _FarmGameOverlayState extends State<FarmGameOverlay> {
   int coinCount = 0;
   User? user;
 
@@ -32,7 +49,10 @@ class _BuyItemOverlayState extends State<BuyItemOverlay> {
   Future<void> loadUserData() async {
     user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
       if (doc.exists && doc.data()!.containsKey('coins')) {
         setState(() {
           coinCount = doc['coins'];
@@ -46,16 +66,19 @@ class _BuyItemOverlayState extends State<BuyItemOverlay> {
       setState(() {
         coinCount -= cost;
       });
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).update({
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .update({
         'coins': coinCount,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Item purchased!')),
+        const SnackBar(content: Text('Item purchased!')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Not enough coins!')),
+        const SnackBar(content: Text('Not enough coins!')),
       );
     }
   }
@@ -65,7 +88,7 @@ class _BuyItemOverlayState extends State<BuyItemOverlay> {
     return Center(
       child: Container(
         width: 300,
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.95),
           borderRadius: BorderRadius.circular(20),
@@ -73,21 +96,21 @@ class _BuyItemOverlayState extends State<BuyItemOverlay> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Your Coins: $coinCount', style: TextStyle(fontSize: 20)),
+            Text('Your Coins: $coinCount', style: const TextStyle(fontSize: 20)),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => buyItem(5),
-              child: Text('Buy Sword (5 coins)'),
+              child: const Text('Buy Sword (5 coins)'),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () => buyItem(10),
-              child: Text('Buy Shield (10 coins)'),
+              child: const Text('Buy Shield (10 coins)'),
             ),
             const SizedBox(height: 20),
             TextButton(
               onPressed: widget.onClose,
-              child: Text('Close'),
+              child: const Text('Close'),
             ),
           ],
         ),

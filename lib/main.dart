@@ -8,6 +8,8 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:fit_farm/view/main_tab/main_tab_view.dart';
 import 'common/colo_extension.dart';
 import 'firebase_options.dart';
+import 'package:flame/game.dart';
+
 
 late List<CameraDescription> cameras;
 
