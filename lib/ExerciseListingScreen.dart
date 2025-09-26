@@ -8,6 +8,8 @@ import 'package:fit_farm/Model/ExerciseDataModel.dart';
 import 'package:flame/game.dart';
 import 'farming_simulation/farm_game.dart';
 
+import 'ExerciseScheduleScreen.dart';
+
 //import 'farming_simulation/farm_game.dart';
 import 'sprout_valley.dart';
 
@@ -20,6 +22,7 @@ class ExerciseListingScreen extends StatefulWidget {
 
 class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
   int coinCount = 0;
+  bool isPremium = false;
   User? user;
 
   @override
@@ -33,8 +36,16 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
     if (user != null) {
       final doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
       if (doc.exists && doc.data()!.containsKey('coins')) {
-        setState(() => coinCount = doc['coins']);
+        setState(() {
+          coinCount = doc['coins'];
+        });
       }
+      if (doc.exists && doc.data()!.containsKey('isPremium')) {
+        setState(() {
+          isPremium = doc['isPremium'] ?? false;
+        });
+      }
+
     }
   }
 
@@ -49,6 +60,75 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
   }
 
   // ---------- MIXED WORKOUT ONLY ----------
+
+  final List<ExerciseDataModel> exerciseList = [
+    ExerciseDataModel(
+      "Push Ups",
+      "pushup.gif",
+      const Color(0xff005F9C),
+      ExerciseType.PushUps,
+    ),
+    ExerciseDataModel(
+      "Squats",
+      "squat.gif",
+      const Color(0xffDF5089),
+      ExerciseType.Squat,
+    ),
+    ExerciseDataModel(
+      "Jumping Jack",
+      "jumping.gif",
+      const Color(0xff000000),
+      ExerciseType.JumpingJack,
+    ),
+    ExerciseDataModel(
+      "Sit Ups",
+      "situp.gif",
+      const Color(0xffFF7043),
+      ExerciseType.SitUp,
+    ),
+    ExerciseDataModel(
+      "Leg Raises",
+      "legraises.gif",
+      const Color(0xff3949AB),
+      ExerciseType.LegRaises,
+    ),
+    ExerciseDataModel(
+      "Alternate Leg Drops",
+      "alternateLegDrop.gif",
+      const Color(0xffF57C00),
+      ExerciseType.AlternateLegDrops,
+    ),
+    ExerciseDataModel(
+      "Glute Bridge",
+      "glutebridge.gif",
+      const Color(0xff8E24AA),
+      ExerciseType.GluteBridge,
+    ),
+    ExerciseDataModel(
+      "Lunges",
+      "lunges.gif",
+      const Color(0xffC2185B),
+      ExerciseType.Lunges,
+    ),
+    ExerciseDataModel(
+      "Plank Leg Raise",
+      "planklegraises.gif",
+      const Color(0xff5D4037),
+      ExerciseType.PlankLegRaise,
+    ),
+    ExerciseDataModel(
+      "Side Lying Leg Raise",
+      "side_lyinglegRaise.gif",
+      const Color(0xff00796B),
+      ExerciseType.LegRaises,
+    ),
+    ExerciseDataModel(
+      "Pulse Squats",
+      "pulsesquat.gif",
+      const Color(0xff00796B),
+      ExerciseType.PulseSquats,
+    ),
+  ];
 
   WorkoutSequence _quickMix() {
     return const WorkoutSequence(
@@ -79,6 +159,89 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
     );
   }
 
+  // Toàn thân nhanh gọn: cơ bụng + mông + chân
+  WorkoutSequence _coreAndLegs() {
+    return const WorkoutSequence(
+      name: 'Core & Legs',
+      steps: [
+        ExerciseStep(
+          type: ExerciseType.SitUp,
+          targetReps: 12,
+          title: 'Sit Ups',
+          image: 'situp.gif',
+          color: Color(0xffFF7043),
+        ),
+        ExerciseStep(
+          type: ExerciseType.GluteBridge,
+          targetReps: 15,
+          title: 'Glute Bridge',
+          image: 'glutebridge.gif',
+          color: Color(0xff8E24AA),
+        ),
+        ExerciseStep(
+          type: ExerciseType.LegRaises,
+          targetReps: 10,
+          title: 'Leg Raises',
+          image: 'legraises.gif',
+          color: Color(0xff3949AB),
+        ),
+      ],
+    );
+  }
+
+// Sức bền + tim mạch
+  WorkoutSequence _cardioBlast() {
+    return const WorkoutSequence(
+      name: 'Cardio Blast',
+      steps: [
+        ExerciseStep(
+          type: ExerciseType.JumpingJack,
+          targetReps: 20,
+          title: 'Jumping Jack',
+          image: 'jumping.gif',
+          color: Color(0xff000000),
+        ),
+        ExerciseStep(
+          type: ExerciseType.Lunges,
+          targetReps: 12,
+          title: 'Lunges',
+          image: 'lunges.gif',
+          color: Color(0xffC2185B),
+        ),
+        ExerciseStep(
+          type: ExerciseType.PulseSquats,
+          targetReps: 15,
+          title: 'Pulse Squats',
+          image: 'pulsesquat.gif',
+          color: Color(0xff00796B),
+        ),
+      ],
+    );
+  }
+
+// Plank variations cho core
+  WorkoutSequence _plankChallenge() {
+    return const WorkoutSequence(
+      name: 'Plank Challenge',
+      steps: [
+        ExerciseStep(
+          type: ExerciseType.PlankLegRaise,
+          targetReps: 10,
+          title: 'Plank Leg Raise',
+          image: 'planklegraises.gif',
+          color: Color(0xff5D4037),
+        ),
+        ExerciseStep(
+          type: ExerciseType.AlternateLegDrops,
+          targetReps: 12,
+          title: 'Alternate Leg Drops',
+          image: 'alternateLegDrop.gif',
+          color: Color(0xffF57C00),
+        ),
+      ],
+    );
+  }
+
   Future<void> _startSequence(WorkoutSequence seq) async {
     await Navigator.push(
       context,
@@ -91,8 +254,7 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
     );
   }
 
-  Widget _mixCard(BuildContext context) {
-    final seq = _quickMix();
+  Widget _mixCard(BuildContext context, WorkoutSequence seq) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -108,13 +270,12 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
             children: [
               const Icon(Icons.fitness_center, color: Colors.white70),
               const SizedBox(width: 8),
-              Text(
-                seq.name,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
-              ),
+              Text(seq.name,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700)),
               const Spacer(),
-              // (Optional) total reps tag
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
@@ -142,34 +303,30 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
               ),
               child: Row(
                 children: [
-                  // Thumb
                   if (step.image.isNotEmpty)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.asset(
-                        'assets/${step.image}',
+                        'assets/fitness/${step.image}',
                         width: 56,
                         height: 56,
                         fit: BoxFit.cover,
                       ),
                     ),
                   if (step.image.isNotEmpty) const SizedBox(width: 12),
-
-                  // Title + reps
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          step.title.isNotEmpty ? step.title : step.type.name,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
+                        Text(step.title.isNotEmpty ? step.title : step.type.name,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
-                        Text(
-                          '${step.targetReps} reps',
-                          style: const TextStyle(color: Colors.white70, fontSize: 13),
-                        ),
+                        Text('${step.targetReps} reps',
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -179,19 +336,18 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
           ],
 
           const SizedBox(height: 4),
-
-          // Start button
           SizedBox(
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => _startSequence(seq),
               child: const Text(
-                'Start Quick Mix',
+                'Start Workout',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
@@ -201,20 +357,71 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Fitness Apps')),
       body: Stack(
         children: [
-          // CONTENT: Mix-only UI
           ListView(
             children: [
-              _mixCard(context),
+              // Always available: Quick Mix
+              _mixCard(context, _quickMix()),
 
+              // Premium-only features
+              if (isPremium) ...[
+                _mixCard(context, _coreAndLegs()),
+                _mixCard(context, _cardioBlast()),
+                _mixCard(context, _plankChallenge()),
+
+                // Schedule builder
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ExerciseScheduleScreen(
+                            allExercises: exerciseList,
+                            userId: user!.uid,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text("My Schedule"),
+                  ),
+                ),
+              ] else ...[
+                // Show upsell for non-premium users
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        "Premium Feature",
+                        style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                          "Upgrade to Premium to unlock Schedule Builder and more workouts."),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Farming Simulation stays available
               // Farming Simulation (NEW PLACEHOLDER)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.all(16.0),
                 child: InkWell(
                   onTap: () {
                     Navigator.push(
@@ -246,7 +453,9 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                     child: const Text(
                       'Farming Game',
                       style: TextStyle(
-                          color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -270,7 +479,9 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                   Text(
                     '$coinCount',
                     style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
                   ),
                   const SizedBox(width: 6),
                   Image.asset('assets/coin.png', width: 24, height: 24),
@@ -282,5 +493,6 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
       ),
     );
   }
+
 }
 
