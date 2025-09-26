@@ -49,7 +49,7 @@ class FarmWorld extends World with HasGameReference<SproutValley> {
   }
 
   Future<void> loadMaps() async {
-    // Path và tile size: chỉnh theo project của bạn
+
     mapTiled = await TiledComponent.load(
       'farm/farm.tmx',
       Vector2.all(WORLD_TILE_SIZE),
