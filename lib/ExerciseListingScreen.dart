@@ -7,6 +7,7 @@ import 'package:fit_farm/DetectionScreen.dart';
 import 'package:fit_farm/Model/ExerciseDataModel.dart';
 import 'package:flame/game.dart';
 import 'farming_simulation/farm_game.dart';
+import 'package:fit_farm/farming_simulation/shop_layout.dart';
 
 import 'ExerciseScheduleScreen.dart';
 
@@ -419,7 +420,6 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
               ],
 
               // Farming Simulation stays available
-              // Farming Simulation (NEW PLACEHOLDER)
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: InkWell(
@@ -430,12 +430,15 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                         builder: (_) => Scaffold(
                           body: GameWidget<FarmGame>(
                             game: FarmGame(),
+                            // OverlayBuilderMap
                             overlayBuilderMap: {
-                              'FarmOverlay': (_, game) => FarmGameOverlay(
-                                onClose: () => Navigator.pop(context),
+                              'ShopButton': (_, game) => ShopButtonOverlay(game: game as FarmGame),
+                              'ShopPopup': (_, game) => ShopOverlay(
+                                game: game as FarmGame,
+                                onClose: () => game.overlays.remove('ShopPopup'),
                               ),
                             },
-                            initialActiveOverlays: const ['FarmOverlay'],
+                            initialActiveOverlays: const ['ShopButton'], // Chỉ hiện nút, không hiện shop
                           ),
                         ),
                       ),

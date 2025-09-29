@@ -1,17 +1,24 @@
-// lib/farm_game.dart
-
+// lib/farming_simulation/farm_game.dart
+import 'package:fit_farm/objects/tree_sprite.dart';
+import 'package:flame/events.dart';
 import 'dart:math';
-
 import 'package:flame/game.dart';
 import 'package:flame_tiled/flame_tiled.dart' as tiled;
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-class FarmGame extends FlameGame {
+class FarmGame extends FlameGame with HasCollisionDetection, TapCallbacks {
+  String? selectedTree;
+  FarmGame({this.selectedTree});
+  final List<Rect> plantableAreas = [];
+  final Map<Rect, TreeSprite?> plantedTrees = {};
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    await _loadMap();
+  }
+
+  Future<void> _loadMap() async {
     final map = await tiled.TiledComponent.load(
       'game/maps/map.tmx',
       Vector2.all(32),
@@ -23,98 +30,64 @@ class FarmGame extends FlameGame {
 
     map.scale = Vector2.all(scale);
     add(map);
-
-  }
-}
-
-class FarmGameOverlay extends StatefulWidget {
-  final VoidCallback onClose;
-
-  const FarmGameOverlay({Key? key, required this.onClose}) : super(key: key);
-
-  @override
-  State<FarmGameOverlay> createState() => _FarmGameOverlayState();
-}
-
-class _FarmGameOverlayState extends State<FarmGameOverlay> {
-  int coinCount = 0;
-  User? user;
-
-  @override
-  void initState() {
-    super.initState();
-    loadUserData();
   }
 
-  Future<void> loadUserData() async {
-    user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .get();
-      if (doc.exists && doc.data()!.containsKey('coins')) {
-        setState(() {
-          coinCount = doc['coins'];
-        });
+  @override
+  void onTapDown(TapDownEvent event) {
+    if (selectedTree != null) {
+      _plantTreeAtPosition(event.canvasPosition);
+    }
+    super.onTapDown(event);
+  }
+
+  Future<void> _loadPlantableAreas(tiled.TiledComponent map) async {
+    try {
+      final plantSlotsLayer = map.tileMap.map.layers
+          .firstWhere((layer) => layer.name == 'PlantSlots') as tiled.ObjectGroup;
+
+      for (final obj in plantSlotsLayer.objects) {
+        // Lấy vùng từ object rectangle (đã scale)
+        final area = Rect.fromLTWH(
+          obj.x * map.scale.x,
+          obj.y * map.scale.y,
+          obj.width * map.scale.x,
+          obj.height * map.scale.y,
+        );
+        plantableAreas.add(area);
+        plantedTrees[area] = null;
+
+        debugPrint("🌱 PlantSlot: ID=${obj.id}, Area=$area");
+      }
+
+      debugPrint("✅ Loaded ${plantableAreas.length} plant slots");
+    } catch (e) {
+      debugPrint(" Error loading PlantSlots: $e");
+    }
+  }
+
+  Rect? _findPlantSlotAtPosition(Vector2 position) {
+    for (final slot in plantableAreas) {
+      if (slot.contains(position.toOffset())) {
+        return slot;
       }
     }
+    return null;
   }
 
-  Future<void> buyItem(int cost) async {
-    if (coinCount >= cost && user != null) {
-      setState(() {
-        coinCount -= cost;
-      });
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .update({
-        'coins': coinCount,
-      });
+  void _plantTreeAtPosition(Vector2 position) {
+    if (selectedTree == null) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Item purchased!')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not enough coins!')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 300,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Your Coins: $coinCount', style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => buyItem(5),
-              child: const Text('Buy Sword (5 coins)'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => buyItem(10),
-              child: const Text('Buy Shield (10 coins)'),
-            ),
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: widget.onClose,
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      ),
+    // Tạo cây tại vị trí tap
+    final tree = TreeSprite(
+      position: position,
+      treeType: selectedTree!,
     );
+
+    add(tree);
+
+    debugPrint("🌳 Planted $selectedTree at $position");
+
+    // Reset selected tree sau khi trồng
+    selectedTree = null;
   }
 }
