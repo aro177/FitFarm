@@ -1,5 +1,6 @@
 // lib/farming_simulation/farm_game.dart
 import 'package:fit_farm/objects/tree_sprite.dart';
+import 'package:fit_farm/objects/seed_sprite.dart';
 import 'package:flame/events.dart';
 import 'dart:math';
 import 'package:flame/game.dart';
@@ -8,9 +9,11 @@ import 'package:flutter/material.dart';
 
 class FarmGame extends FlameGame with HasCollisionDetection, TapCallbacks {
   String? selectedTree;
-  FarmGame({this.selectedTree});
   final List<Rect> plantableAreas = [];
   final Map<Rect, TreeSprite?> plantedTrees = {};
+  Function(String)? showMessage;
+
+  FarmGame({this.selectedTree});
 
   @override
   Future<void> onLoad() async {
@@ -30,14 +33,8 @@ class FarmGame extends FlameGame with HasCollisionDetection, TapCallbacks {
 
     map.scale = Vector2.all(scale);
     add(map);
-  }
 
-  @override
-  void onTapDown(TapDownEvent event) {
-    if (selectedTree != null) {
-      _plantTreeAtPosition(event.canvasPosition);
-    }
-    super.onTapDown(event);
+    await _loadPlantableAreas(map);
   }
 
   Future<void> _loadPlantableAreas(tiled.TiledComponent map) async {
@@ -46,7 +43,6 @@ class FarmGame extends FlameGame with HasCollisionDetection, TapCallbacks {
           .firstWhere((layer) => layer.name == 'PlantSlots') as tiled.ObjectGroup;
 
       for (final obj in plantSlotsLayer.objects) {
-        // Lấy vùng từ object rectangle (đã scale)
         final area = Rect.fromLTWH(
           obj.x * map.scale.x,
           obj.y * map.scale.y,
@@ -55,14 +51,20 @@ class FarmGame extends FlameGame with HasCollisionDetection, TapCallbacks {
         );
         plantableAreas.add(area);
         plantedTrees[area] = null;
-
         debugPrint("🌱 PlantSlot: ID=${obj.id}, Area=$area");
       }
-
       debugPrint("✅ Loaded ${plantableAreas.length} plant slots");
     } catch (e) {
-      debugPrint(" Error loading PlantSlots: $e");
+      debugPrint("❌ Error loading PlantSlots: $e");
     }
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    if (selectedTree != null) {
+      _plantTreeAtPosition(event.canvasPosition);
+    }
+    super.onTapDown(event);
   }
 
   Rect? _findPlantSlotAtPosition(Vector2 position) {
@@ -77,17 +79,38 @@ class FarmGame extends FlameGame with HasCollisionDetection, TapCallbacks {
   void _plantTreeAtPosition(Vector2 position) {
     if (selectedTree == null) return;
 
-    // Tạo cây tại vị trí tap
-    final tree = TreeSprite(
-      position: position,
-      treeType: selectedTree!,
-    );
+    final plantSlot = _findPlantSlotAtPosition(position);
 
-    add(tree);
+    if (plantSlot != null) {
+      if (plantedTrees[plantSlot] == null) {
+        final centerPosition = Vector2(
+          plantSlot.left + plantSlot.width / 2,
+          plantSlot.top + plantSlot.height / 2,
+        );
 
-    debugPrint("🌳 Planted $selectedTree at $position");
+        // TẠO HẠT GIỐNG TRƯỚC
+        final seed = SeedSprite(
+          treeType: selectedTree!,
+          targetPosition: centerPosition,
+          plantSlot: plantSlot,
+        );
 
-    // Reset selected tree sau khi trồng
-    selectedTree = null;
+        add(seed);
+        plantedTrees[plantSlot] = null;
+
+        debugPrint("🌱 Planted seed for $selectedTree at $centerPosition");
+
+        selectedTree = null;
+        _showMessage("Đã trồng hạt giống! Cây sẽ mọc sau 2 giây...");
+      } else {
+        _showMessage("Ô đất này đã có cây!");
+      }
+    } else {
+      _showMessage("Hãy chọn ô đất màu nâu để trồng cây!");
+    }
+  }
+
+  void _showMessage(String message) {
+    showMessage?.call(message);
   }
 }
