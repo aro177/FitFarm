@@ -24,16 +24,9 @@ class FarmGame extends FlameGame with HasCollisionDetection, TapCallbacks {
       Vector2.all(32),
     );
 
-    // Lấy kích thước map theo pixel
-  final mapWidth = map.tileMap.map.width * 32;
-  final mapHeight = map.tileMap.map.height * 32;
-
-  // Tính scale theo màn hình
-  final scaleX = size.x / mapWidth;
-  final scaleY = size.y / mapHeight;
-  final scale = min(scaleX, scaleY);
-
-  map.scale = Vector2.all(scale);
+    final scaleX = size.x / map.width;
+    final scaleY = size.y / map.height;
+    final scale = min(scaleX, scaleY);
 
     map.scale = Vector2.all(scale);
     add(map);

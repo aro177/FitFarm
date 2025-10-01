@@ -113,17 +113,13 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
       "id": "apple",
       "name": "Cây táo",
       "price": 5,
-      "image": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png",
-      "seed": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/seed.png",
-      
+      "image": "assets/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_4_00.png",
     },
     {
       "id": "mango",
       "name": "Cây xoài",
       "price": 10,
-      "image": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png", // Tạm dùng cùng ảnh
-       "seed": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/seed.png",
-
+      "image": "assets/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_4_00.png", // Tạm dùng cùng ảnh
     },
   ];
 
@@ -390,7 +386,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
       children: _shopPlants.map((plant) {
         final plantName = plant["name"] as String;
         final price = plant["price"] as int;
-        final image = plant["image"] as String;
 
         return Card(
           elevation: 1,
@@ -407,10 +402,11 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     color: Colors.green.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Image.asset(
-                         image,  
-                          fit: BoxFit.contain,    
-                        ),
+                  child: Icon(
+                    Icons.eco,
+                    color: Colors.green,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 12),
 
@@ -502,7 +498,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
         final plantName = plant["name"] as String;
         final count = _getPlantCount(plantName);
 
-        final image = plant["seed"] as String;
         return Card(
           elevation: 1,
           margin: const EdgeInsets.only(bottom: 8),
@@ -518,9 +513,10 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     color: Colors.green.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Image.asset(
-                    image,
-                    fit: BoxFit.contain,
+                  child: Icon(
+                    Icons.eco,
+                    color: Colors.green,
+                    size: 24,
                   ),
                 ),
                 const SizedBox(width: 12),
