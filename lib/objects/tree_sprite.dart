@@ -27,11 +27,11 @@ class TreeSprite extends SpriteComponent with HasGameReference<FarmGame> {
   String _getTreeAssetPath(String type) {
     switch (type) {
       case "Cây táo":
-        return "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_4_00.png";
+        return "game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png";
       case "Cây xoài":
-        return "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_4_00.png";
+        return "game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png";
       default:
-        return "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_4_00.png";
+        return "game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png";
     }
   }
 }

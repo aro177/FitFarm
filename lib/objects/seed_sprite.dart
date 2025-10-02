@@ -21,7 +21,7 @@ class SeedSprite extends SpriteComponent with HasGameReference<FarmGame> {
 
   @override
   Future<void> onLoad() async {
-    sprite = await game.loadSprite("assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/cay 1.png");
+    sprite = await game.loadSprite("game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/seed.png");
 
     _startGrowthTimer();
 

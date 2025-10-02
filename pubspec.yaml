@@ -99,6 +99,10 @@ flutter:
     - assets/game/images/resources/map/Tileset Grass Fall.png
     - assets/fitness/
     - assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/
+    - assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s2/
+    - assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s3/
+    - assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s5/
+    - assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
