@@ -122,7 +122,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
     }
   }
 
-  // HÀM THÊM COIN MỚI
   Future<void> _add100Coins() async {
     setState(() {
       _coins += 100;
@@ -252,7 +251,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
             ),
             child: Column(
               children: [
-                // Header - ĐÃ THÊM NÚT ADD COIN
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -297,7 +295,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // PHẦN COIN ĐÃ ĐƯỢC SỬA ĐỂ THÊM NÚT ADD COIN
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -326,7 +323,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                                 ),
                               ],
                             ),
-                            // NÚT THÊM COIN MỚI
                             Container(
                               height: 25,
                               child: ElevatedButton(
@@ -381,7 +377,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                   ),
                 ),
 
-                // Tab Content - GIỮ NGUYÊN
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
@@ -398,7 +393,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
           ),
         ),
 
-        // Confirmation Dialog - GIỮ NGUYÊN
         if (_showConfirmDialog) _buildConfirmationDialog(),
       ],
     );
