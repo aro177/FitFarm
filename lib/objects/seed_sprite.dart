@@ -1,4 +1,3 @@
-// objects/seed_sprite.dart
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:fit_farm/farming_simulation/farm_game.dart';
@@ -38,6 +37,7 @@ class SeedSprite extends SpriteComponent with HasGameReference<FarmGame> {
     final tree = TreeSprite(
       position: targetPosition,
       treeType: treeType,
+      plantSlot: plantSlot
     );
 
     game.add(tree);

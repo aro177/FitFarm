@@ -131,6 +131,21 @@ class FarmGame extends FlameGame with HasCollisionDetection, TapCallbacks {
     }
   }
 
+  //tuoi cay
+  void showTreeInfo(Rect plantSlot) {
+    final tree = plantedTrees[plantSlot];
+    if (tree != null) {
+      final info = tree.treeInfo;
+      showMessage?.call(
+          '${info['type']}\n'
+              'Giai đoạn: ${info['currentStage']}/4\n'
+              'Số lần tưới: ${info['waterCount']}\n'
+              'Cần thêm: ${info['nextStageWaters']} lần tưới\n'
+              'Tình trạng: ${info['isWithered'] ? 'Đã héo' : 'Khỏe mạnh'}'
+      );
+    }
+  }
+
   void _showMessage(String message) {
     showMessage?.call(message);
     print("💬 Message: $message");
