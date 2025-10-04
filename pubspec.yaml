@@ -59,6 +59,9 @@ dependencies:
   table_calendar: ^3.0.4
 
   qr_flutter: ^4.1.0
+  velocity_x: ^4.1.1
+  google_fonts: ^6.3.2
+  tailwind_colors: ^0.3.1
 
 
 dev_dependencies:
