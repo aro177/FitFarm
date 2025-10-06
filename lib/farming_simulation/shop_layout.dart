@@ -51,7 +51,6 @@ class ShopButtonOverlay extends StatelessWidget {
             child: const Icon(Icons.store),
           ),
         ),
-
       ],
     );
   }
@@ -77,6 +76,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
   int _coins = 1000000;
   User? _user;
   List<String> _inventory = [];
+  int _waterCount = 0;
   String? _selectedPlant;
   bool _showConfirmDialog = false;
   String _dialogType = 'buy';
@@ -87,21 +87,21 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
       "name": "Cây táo",
       "price": 5,
       "image": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png",
-      "seed": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/seed.png",
+      "seed": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/p_tomato_s1_00.png",
     },
     {
       "id": "mango",
       "name": "Cây xoài",
       "price": 10,
-      "image": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png", // Tạm dùng cùng ảnh
-      "seed": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/seed.png",
+      "image": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png",
+      "seed": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/p_tomato_s1_00.png",
     },
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this); // ĐỔI THÀNH 3 TAB
     _loadUserData();
   }
 
@@ -117,6 +117,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
         setState(() {
           _coins = doc.data()?['coins'] ?? 100000;
           _inventory = List<String>.from(doc.data()?['inventory'] ?? []);
+          _waterCount = doc.data()?['water'] ?? 0;
         });
       }
     }
@@ -127,7 +128,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
       _coins += 100;
     });
 
-    // Update Firebase
     await _updateUserData();
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -146,8 +146,42 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
           .update({
         'coins': _coins,
         'inventory': _inventory,
+        'water': _waterCount,
       });
     }
+  }
+
+  // HÀM MUA NƯỚC
+  void _handleBuyWater() {
+    setState(() {
+      _dialogType = 'buyWater';
+      _showConfirmDialog = true;
+    });
+  }
+
+  void _confirmBuyWater() {
+    const waterPrice = 5;
+
+    if (_coins >= waterPrice) {
+      setState(() {
+        _coins -= waterPrice;
+        _waterCount += 1;
+      });
+
+      _updateUserData();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã mua 1 nước!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không đủ coins!')),
+      );
+    }
+
+    setState(() {
+      _showConfirmDialog = false;
+    });
   }
 
   void _handleBuyPlant(String plantName, int price) {
@@ -177,10 +211,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
           _inventory.add(_selectedPlant!);
         });
 
-        // Update Firebase
         _updateUserData();
-
-        // Update game selected tree
         widget.game.selectedTree = _selectedPlant;
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -204,11 +235,8 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
         _inventory.remove(_selectedPlant);
       });
 
-      // Update Firebase
       _updateUserData();
-
       widget.game.selectedTree = _selectedPlant;
-
     }
     setState(() {
       _showConfirmDialog = false;
@@ -233,7 +261,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
           ),
         ),
 
-        // Popup Shop
         Center(
           child: Container(
             width: 350,
@@ -358,7 +385,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                   ),
                 ),
 
-                // Tabs - GIỮ NGUYÊN
+                // TABS - THÊM TAB NƯỚC
                 Container(
                   color: Colors.grey[100],
                   child: TabBar(
@@ -367,12 +394,9 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     unselectedLabelColor: Colors.grey[600],
                     indicatorColor: Colors.green,
                     tabs: const [
-                      Tab(
-                        child: Text('Cửa hàng'),
-                      ),
-                      Tab(
-                        child: Text('Kho của tôi'),
-                      ),
+                      Tab(text: 'Cây'),
+                      Tab(text: 'Kho'),
+                      Tab(text: 'Nước'), // TAB MỚI
                     ],
                   ),
                 ),
@@ -381,10 +405,9 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      // Shop Tab
-                      _buildShopTab(),
-                      // Inventory Tab
-                      _buildInventoryTab(),
+                      _buildShopTab(),      // Tab Cây
+                      _buildInventoryTab(), // Tab Kho
+                      _buildWaterTab(),     // Tab Nước MỚI
                     ],
                   ),
                 ),
@@ -398,6 +421,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
     );
   }
 
+  // TAB CÂY - GIỮ NGUYÊN
   Widget _buildShopTab() {
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -413,7 +437,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // Plant Icon
                 Container(
                   width: 50,
                   height: 50,
@@ -428,7 +451,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                 ),
                 const SizedBox(width: 12),
 
-                // Plant Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,7 +474,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                   ),
                 ),
 
-                // Buy Button
                 ElevatedButton(
                   onPressed: _coins >= price ? () => _handleBuyPlant(plantName, price) : null,
                   style: ElevatedButton.styleFrom(
@@ -473,6 +494,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
     );
   }
 
+  // TAB KHO - GIỮ NGUYÊN
   Widget _buildInventoryTab() {
     if (_inventory.isEmpty) {
       return Center(
@@ -505,7 +527,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
       );
     }
 
-    // Get unique plants with counts
     final uniquePlants = _shopPlants.where((plant) {
       return _inventory.contains(plant["name"]);
     }).toList();
@@ -524,7 +545,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // Plant Icon
                 Container(
                   width: 50,
                   height: 50,
@@ -539,7 +559,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                 ),
                 const SizedBox(width: 12),
 
-                // Plant Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -583,7 +602,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                   ),
                 ),
 
-                // Plant Button
                 ElevatedButton(
                   onPressed: count > 0 ? () => _handlePlantSeed(plantName) : null,
                   style: ElevatedButton.styleFrom(
@@ -604,14 +622,82 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
     );
   }
 
+  // TAB NƯỚC MỚI
+  Widget _buildWaterTab() {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        Icon(
+          Icons.water_drop,
+          size: 60,
+          color: Colors.blue,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Mua nước để tưới cây',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          '5 Coins / 1 Nước',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Nước hiện có: $_waterCount',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: _handleBuyWater,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+          ),
+          child: const Text('Mua Nước'),
+        ),
+      ],
+    );
+  }
+
   Widget _buildConfirmationDialog() {
+    String title = '';
+    String message = '';
+    VoidCallback? onConfirm;
+
+    if (_dialogType == 'buy') {
+      title = 'Xác nhận mua';
+      message = 'Mua $_selectedPlant với giá ${_shopPlants.firstWhere((p) => p["name"] == _selectedPlant)["price"]} coins?';
+      onConfirm = _confirmBuy;
+    } else if (_dialogType == 'plant') {
+      title = 'Xác nhận trồng';
+      message = 'Trồng $_selectedPlant?';
+      onConfirm = _confirmPlant;
+    } else if (_dialogType == 'buyWater') {
+      title = 'Xác nhận mua';
+      message = 'Mua 1 nước với giá 5 coins?';
+      onConfirm = _confirmBuyWater;
+    }
+
     return Stack(
       children: [
-        // Backdrop
         Container(
           color: Colors.black.withOpacity(0.7),
         ),
-        // Dialog
         Center(
           child: Container(
             width: 280,
@@ -624,7 +710,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _dialogType == 'buy' ? 'Xác nhận mua' : 'Xác nhận trồng',
+                  title,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -632,9 +718,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _dialogType == 'buy'
-                      ? 'Mua $_selectedPlant với giá ${_shopPlants.firstWhere((p) => p["name"] == _selectedPlant)["price"]} coins?'
-                      : 'Trồng $_selectedPlant?',
+                  message,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey[600],
@@ -649,7 +733,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                         onPressed: () {
                           setState(() {
                             _showConfirmDialog = false;
-                            _selectedPlant = null;
                           });
                         },
                         child: const Text('Hủy'),
@@ -658,12 +741,12 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _dialogType == 'buy' ? _confirmBuy : _confirmPlant,
+                        onPressed: onConfirm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                         ),
-                        child: Text(_dialogType == 'buy' ? 'Mua' : 'Trồng'),
+                        child: const Text('Xác nhận'),
                       ),
                     ),
                   ],

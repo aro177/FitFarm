@@ -1,6 +1,5 @@
 // objects/tree_sprite.dart
 import 'dart:async' as async;
-import 'package:fit_farm/objects/tree_sprite.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
@@ -10,44 +9,38 @@ class TreeSprite extends SpriteComponent
     with HasGameReference<FarmGame>, TapCallbacks {
   final String treeType;
   final Rect plantSlot;
+  int currentStage;
+  int waterCount;
 
-
-  int waterCount = 0;
   DateTime lastWatered = DateTime.now();
   DateTime plantedAt = DateTime.now();
   bool isWithered = false;
   async.Timer? _witheringTimer;
 
+  // GROWTH REQUIREMENTS MỚI - Thống nhất với seed_sprite
   static const Map<int, int> growthRequirements = {
-    1: 5,
-    2: 15,
-    3: 30,
-    4: 50,
+    2: 4, // Stage 2 → Stage 3 cần 4 nước
+    3: 5, // Stage 3 → Stage 4 cần 5 nước
+    4: 0, // Stage 4 là cuối cùng
   };
-
-  int get currentStage {
-    if (waterCount >= growthRequirements[4]!) return 4;
-    if (waterCount >= growthRequirements[3]!) return 3;
-    if (waterCount >= growthRequirements[2]!) return 2;
-    if (waterCount >= growthRequirements[1]!) return 1;
-    return 0; // Seed stage
-  }
 
   TreeSprite({
     required Vector2 position,
     required this.treeType,
     required this.plantSlot,
+    this.currentStage = 2,
+    this.waterCount = 0,
   }) : super(
     position: position,
     size: Vector2(64, 80),
     anchor: Anchor.bottomCenter,
   );
 
-
   @override
   Future<void> onLoad() async {
     await _updateTreeSprite();
 
+    // Timer kiểm tra héo mỗi phút
     _witheringTimer = async.Timer.periodic(const Duration(minutes: 1), (timer) {
       _checkWithering();
     });
@@ -55,15 +48,21 @@ class TreeSprite extends SpriteComponent
     return super.onLoad();
   }
 
-  void _handleWitheringCheck(Timer timer) {
-    _checkWithering();
+  @override
+  void onRemove() {
+    _witheringTimer?.cancel();
+    super.onRemove();
   }
 
   Future<void> _updateTreeSprite() async {
-    if (isWithered) {
-      sprite = await game.loadSprite(_getWitheredAssetPath());
-    } else {
-      sprite = await game.loadSprite(_getTreeAssetPath(currentStage));
+    try {
+      final stage = currentStage;
+      // Nếu cây bị héo, dùng sprite stage 5
+      final actualStage = isWithered ? 5 : stage;
+      sprite = await game.loadSprite(_getTreeAssetPath(actualStage));
+      print("🌳 Updated $treeType to stage $actualStage (waters: $waterCount)");
+    } catch (e) {
+      print("❌ ERROR loading tree sprite: $e");
     }
   }
 
@@ -78,59 +77,95 @@ class TreeSprite extends SpriteComponent
     }
   }
 
-  String _getWitheredAssetPath() {
-    return "game/images/resources/plants/Tomato/p_tomato/p_tomato_s5/p_tomato_s5_00.png";
-  }
-
   @override
   void onTapDown(TapDownEvent event) {
     _waterTree();
     super.onTapDown(event);
   }
 
+  // Trong class TreeSprite, sửa phương thức _waterTree()
   void _waterTree() {
-    final now = DateTime.now();
-    final hoursSinceLastWater = now.difference(lastWatered).inHours;
+    // KHÔNG kiểm tra isWateringMode ở đây nữa, vì đã kiểm tra trong farm_game
+    // Chỉ thực hiện logic tưới nước cụ thể cho cây
 
-    if (hoursSinceLastWater >= 5) {
+    final now = DateTime.now();
+    final minutesSinceLastWater = now.difference(lastWatered).inMinutes;
+
+    // 5 phút chờ tưới lại (giữ nguyên)
+    if (minutesSinceLastWater >= 5) {
       waterCount++;
       lastWatered = now;
 
       if (isWithered) {
         isWithered = false;
+        _updateTreeSprite(); // Cập nhật sprite khi hồi sinh
       }
 
-      _updateTreeSprite();
-
-      print("💧 Watered $treeType. Total waters: $waterCount, Stage: $currentStage");
+      // Kiểm tra phát triển stage
+      _checkGrowth();
 
       _showWaterEffect();
 
     } else {
-      final hoursRemaining = 5 - hoursSinceLastWater;
-      print("⏳ Cannot water yet. Wait $hoursRemaining more hours");
+      final minutesRemaining = 5 - minutesSinceLastWater;
+      (game as FarmGame).showMessage?.call(
+          'Cây vẫn còn ẩm! Hãy đợi thêm ${minutesRemaining} phút để tưới lại.'
+      );
+    }
+  }
+
+  void _checkGrowth() {
+    if (currentStage >= 4 || isWithered) return;
+
+    final requiredWaters = growthRequirements[currentStage] ?? 0;
+
+    if (waterCount >= requiredWaters && requiredWaters > 0) {
+      currentStage++;
+      waterCount = 0; // Reset water count cho stage mới
+
+      print("🌳 $treeType grew to stage $currentStage!");
+      _updateTreeSprite();
 
       (game as FarmGame).showMessage?.call(
-          'Cây vẫn còn ẩm! Hãy đợi thêm ${hoursRemaining}h để tưới lại.'
+          '$treeType đã phát triển lên giai đoạn $currentStage!'
       );
     }
   }
 
   void _checkWithering() {
-    final now = DateTime.now();
-    final daysSinceLastWater = now.difference(lastWatered).inDays;
+    if (isWithered || currentStage >= 4) return;
 
-    if (daysSinceLastWater >= 2 && !isWithered) {
+    final now = DateTime.now();
+    final minutesSinceLastWater = now.difference(lastWatered).inMinutes;
+
+    // 30 phút không tưới thì héo (stage 5)
+    if (minutesSinceLastWater >= 30) {
       isWithered = true;
       _updateTreeSprite();
-      print("🥀 $treeType has withered!");
+      print("🥀 $treeType has withered after 30 minutes without water!");
+
+      (game as FarmGame).showMessage?.call(
+          '$treeType đã bị héo do thiếu nước!'
+      );
     }
   }
 
   void _showWaterEffect() {
-    (game as FarmGame).showMessage?.call(
-        'Đã tưới nước cho $treeType! Lần tưới: $waterCount'
-    );
+    final nextStageWaters = _getNextStageWaters();
+
+    String message = 'Đã tưới nước cho $treeType!\nLần tưới: $waterCount\nGiai đoạn: ${isWithered ? "Héo" : "$currentStage/4"}';
+
+    if (!isWithered) {
+      if (currentStage < 4 && nextStageWaters > 0) {
+        message += '\nCần thêm $nextStageWaters lần tưới để lên giai đoạn ${currentStage + 1}';
+      } else if (currentStage == 4) {
+        message += '\nCây đã đạt giai đoạn tối đa!';
+      }
+    } else {
+      message += '\nCây đang bị héo, cần được tưới nước!';
+    }
+
+    (game as FarmGame).showMessage?.call(message);
   }
 
   Map<String, dynamic> get treeInfo {
@@ -146,8 +181,13 @@ class TreeSprite extends SpriteComponent
   }
 
   int _getNextStageWaters() {
-    final nextStage = currentStage + 1;
-    if (nextStage > 4) return 0;
-    return growthRequirements[nextStage]! - waterCount;
+    if (isWithered || currentStage >= 4) return 0;
+
+    final requiredWaters = growthRequirements[currentStage] ?? 0;
+    return requiredWaters - waterCount;
+  }
+
+  void water() {
+    _waterTree();
   }
 }
