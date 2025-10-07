@@ -95,8 +95,8 @@ flutter:
     - assets/game/
     - assets/tiles/
     - assets/game/maps/
-    - assets/game/images/resources/map/map.png
-    - assets/game/images/resources/map/Tileset Grass Fall.png
+    - assets/game/images/resources/map/
+    - assets/game/images/resources/map/
     - assets/fitness/
     - assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/
     - assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s2/

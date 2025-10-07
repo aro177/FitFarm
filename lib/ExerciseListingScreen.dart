@@ -9,6 +9,7 @@ import 'package:flame/game.dart';
 import 'farming_simulation/farm_game.dart';
 import 'package:fit_farm/farming_simulation/shop_layout.dart';
 import 'package:fit_farm/farming_simulation/water_button_overlay.dart';
+import 'package:fit_farm/farming_simulation/digging_button_overlay.dart';
 
 import 'ExerciseScheduleScreen.dart';
 
@@ -436,12 +437,13 @@ class _ExerciseListingScreenState extends State<ExerciseListingScreen> {
                             overlayBuilderMap: {
                               'ShopButton': (_, game) => ShopButtonOverlay(game: game as FarmGame),
                               'WaterButton': (_, game) => WaterButtonOverlay(game: game as FarmGame),
+                              'DiggingButton': (_, game) => DiggingButtonOverlay(game: game as FarmGame),
                               'ShopPopup': (_, game) => ShopOverlay(
                                 game: game as FarmGame,
                                 onClose: () => game.overlays.remove('ShopPopup'),
                               ),
                             },
-                            initialActiveOverlays: const ['ShopButton', 'WaterButton'],
+                            initialActiveOverlays: const ['ShopButton', 'WaterButton','DiggingButton'],
 
                           ),
                         ),

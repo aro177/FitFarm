@@ -40,7 +40,6 @@ class TreeSprite extends SpriteComponent
   Future<void> onLoad() async {
     await _updateTreeSprite();
 
-    // Timer kiểm tra héo mỗi phút
     _witheringTimer = async.Timer.periodic(const Duration(minutes: 1), (timer) {
       _checkWithering();
     });
@@ -85,8 +84,6 @@ class TreeSprite extends SpriteComponent
 
   // Trong class TreeSprite, sửa phương thức _waterTree()
   void _waterTree() {
-    // KHÔNG kiểm tra isWateringMode ở đây nữa, vì đã kiểm tra trong farm_game
-    // Chỉ thực hiện logic tưới nước cụ thể cho cây
 
     final now = DateTime.now();
     final minutesSinceLastWater = now.difference(lastWatered).inMinutes;

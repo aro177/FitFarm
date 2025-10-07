@@ -396,7 +396,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     tabs: const [
                       Tab(text: 'Cây'),
                       Tab(text: 'Kho'),
-                      Tab(text: 'Nước'), // TAB MỚI
+                      Tab(text: 'Nước'),
                     ],
                   ),
                 ),
@@ -407,7 +407,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     children: [
                       _buildShopTab(),      // Tab Cây
                       _buildInventoryTab(), // Tab Kho
-                      _buildWaterTab(),     // Tab Nước MỚI
+                      _buildWaterTab(),     // Tab Nước
                     ],
                   ),
                 ),
@@ -421,7 +421,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
     );
   }
 
-  // TAB CÂY - GIỮ NGUYÊN
+  // TAB CÂY
   Widget _buildShopTab() {
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -494,7 +494,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
     );
   }
 
-  // TAB KHO - GIỮ NGUYÊN
+  // TAB KHO
   Widget _buildInventoryTab() {
     if (_inventory.isEmpty) {
       return Center(
@@ -622,7 +622,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
     );
   }
 
-  // TAB NƯỚC MỚI
+  // TAB NƯỚC
   Widget _buildWaterTab() {
     return Column(
       children: [
