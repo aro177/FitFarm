@@ -14,7 +14,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
   final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
 
-  final String _apiKey = 'AIzaSyB3C3WLt_XiyphwQhL8ap1f8X8aL1wYDPU';  
+  final String _apiKey = 'AIzaSyAGqN_M1Fc2xe3T-B0v1177Ff5N7dXNQko';
 
   // Các câu hỏi gợi ý mặc định
   final List<String> _defaultQuestions = [
@@ -26,7 +26,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
 
   Future<String> _sendMessageToGemini(String message) async {
     final url = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$_apiKey',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=$_apiKey',
     );
 
     final headers = {'Content-Type': 'application/json'};
