@@ -40,7 +40,6 @@ class ShopButtonOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Nút mở shop
         Positioned(
           top: 20,
           right: 20,
@@ -52,33 +51,6 @@ class ShopButtonOverlay extends StatelessWidget {
             child: const Icon(Icons.store),
           ),
         ),
-
-        // Hiển thị khi có cây được chọn
-        if (game.selectedTree != null)
-          Positioned(
-            top: 20,
-            left: 20,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.eco, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text(
-                    'Đang chọn: ${game.selectedTree}\nChạm vào map để trồng',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
       ],
     );
   }
@@ -101,32 +73,35 @@ class ShopOverlay extends StatefulWidget {
 
 class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _coins = 100;
+  int _coins = 1000000;
   User? _user;
   List<String> _inventory = [];
+  int _waterCount = 0;
   String? _selectedPlant;
   bool _showConfirmDialog = false;
-  String _dialogType = 'buy'; // 'buy' or 'plant'
+  String _dialogType = 'buy';
 
   final List<Map<String, dynamic>> _shopPlants = [
     {
       "id": "apple",
       "name": "Cây táo",
       "price": 5,
-      "image": "assets/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_4_00.png",
+      "image": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png",
+      "seed": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/p_tomato_s1_00.png",
     },
     {
       "id": "mango",
       "name": "Cây xoài",
       "price": 10,
-      "image": "assets/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_4_00.png", // Tạm dùng cùng ảnh
+      "image": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s4/p_tomato_s4_00.png",
+      "seed": "assets/game/images/resources/plants/Tomato/p_tomato/p_tomato_s1/p_tomato_s1_00.png",
     },
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this); // ĐỔI THÀNH 3 TAB
     _loadUserData();
   }
 
@@ -140,11 +115,27 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
 
       if (doc.exists) {
         setState(() {
-          _coins = doc.data()?['coins'] ?? 100;
+          _coins = doc.data()?['coins'] ?? 100000;
           _inventory = List<String>.from(doc.data()?['inventory'] ?? []);
+          _waterCount = doc.data()?['water'] ?? 0;
         });
       }
     }
+  }
+
+  Future<void> _add100Coins() async {
+    setState(() {
+      _coins += 100;
+    });
+
+    await _updateUserData();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('+100 Coins! Tổng: $_coins coins'),
+        duration: Duration(seconds: 1),
+      ),
+    );
   }
 
   Future<void> _updateUserData() async {
@@ -155,8 +146,42 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
           .update({
         'coins': _coins,
         'inventory': _inventory,
+        'water': _waterCount,
       });
     }
+  }
+
+  // HÀM MUA NƯỚC
+  void _handleBuyWater() {
+    setState(() {
+      _dialogType = 'buyWater';
+      _showConfirmDialog = true;
+    });
+  }
+
+  void _confirmBuyWater() {
+    const waterPrice = 5;
+
+    if (_coins >= waterPrice) {
+      setState(() {
+        _coins -= waterPrice;
+        _waterCount += 1;
+      });
+
+      _updateUserData();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã mua 1 nước!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không đủ coins!')),
+      );
+    }
+
+    setState(() {
+      _showConfirmDialog = false;
+    });
   }
 
   void _handleBuyPlant(String plantName, int price) {
@@ -186,10 +211,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
           _inventory.add(_selectedPlant!);
         });
 
-        // Update Firebase
         _updateUserData();
-
-        // Update game selected tree
         widget.game.selectedTree = _selectedPlant;
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -213,14 +235,8 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
         _inventory.remove(_selectedPlant);
       });
 
-      // Update Firebase
       _updateUserData();
-
       widget.game.selectedTree = _selectedPlant;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã chọn $_selectedPlant. Chạm vào map để trồng.')),
-      );
     }
     setState(() {
       _showConfirmDialog = false;
@@ -245,7 +261,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
           ),
         ),
 
-        // Popup Shop
         Center(
           child: Container(
             width: 350,
@@ -263,7 +278,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
             ),
             child: Column(
               children: [
-                // Header
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -315,20 +329,53 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Icon(
-                              Icons.monetization_on,
-                              color: Colors.yellow[300],
-                              size: 16,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.monetization_on,
+                                  color: Colors.yellow[300],
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Coins: $_coins',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Coins: $_coins',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                            Container(
+                              height: 25,
+                              child: ElevatedButton(
+                                onPressed: _add100Coins,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.yellow.shade600,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.add, size: 12),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      '+100',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -338,7 +385,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                   ),
                 ),
 
-                // Tabs
+                // TABS - THÊM TAB NƯỚC
                 Container(
                   color: Colors.grey[100],
                   child: TabBar(
@@ -347,25 +394,20 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     unselectedLabelColor: Colors.grey[600],
                     indicatorColor: Colors.green,
                     tabs: const [
-                      Tab(
-                        child: Text('Cửa hàng'),
-                      ),
-                      Tab(
-                        child: Text('Kho của tôi'),
-                      ),
+                      Tab(text: 'Cây'),
+                      Tab(text: 'Kho'),
+                      Tab(text: 'Nước'),
                     ],
                   ),
                 ),
 
-                // Tab Content
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      // Shop Tab
-                      _buildShopTab(),
-                      // Inventory Tab
-                      _buildInventoryTab(),
+                      _buildShopTab(),      // Tab Cây
+                      _buildInventoryTab(), // Tab Kho
+                      _buildWaterTab(),     // Tab Nước
                     ],
                   ),
                 ),
@@ -374,18 +416,19 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
           ),
         ),
 
-        // Confirmation Dialog
         if (_showConfirmDialog) _buildConfirmationDialog(),
       ],
     );
   }
 
+  // TAB CÂY
   Widget _buildShopTab() {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: _shopPlants.map((plant) {
         final plantName = plant["name"] as String;
         final price = plant["price"] as int;
+        final image = plant["image"] as String;
 
         return Card(
           elevation: 1,
@@ -394,7 +437,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // Plant Icon
                 Container(
                   width: 50,
                   height: 50,
@@ -402,15 +444,13 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     color: Colors.green.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    Icons.eco,
-                    color: Colors.green,
-                    size: 24,
+                  child: Image.asset(
+                    image,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(width: 12),
 
-                // Plant Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,7 +474,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                   ),
                 ),
 
-                // Buy Button
                 ElevatedButton(
                   onPressed: _coins >= price ? () => _handleBuyPlant(plantName, price) : null,
                   style: ElevatedButton.styleFrom(
@@ -455,6 +494,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
     );
   }
 
+  // TAB KHO
   Widget _buildInventoryTab() {
     if (_inventory.isEmpty) {
       return Center(
@@ -487,7 +527,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
       );
     }
 
-    // Get unique plants with counts
     final uniquePlants = _shopPlants.where((plant) {
       return _inventory.contains(plant["name"]);
     }).toList();
@@ -497,6 +536,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
       children: uniquePlants.map((plant) {
         final plantName = plant["name"] as String;
         final count = _getPlantCount(plantName);
+        final seed = plant["seed"] as String;
 
         return Card(
           elevation: 1,
@@ -505,7 +545,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // Plant Icon
                 Container(
                   width: 50,
                   height: 50,
@@ -513,15 +552,13 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     color: Colors.green.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    Icons.eco,
-                    color: Colors.green,
-                    size: 24,
+                  child: Image.asset(
+                    seed,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(width: 12),
 
-                // Plant Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,7 +602,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                   ),
                 ),
 
-                // Plant Button
                 ElevatedButton(
                   onPressed: count > 0 ? () => _handlePlantSeed(plantName) : null,
                   style: ElevatedButton.styleFrom(
@@ -586,14 +622,82 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
     );
   }
 
+  // TAB NƯỚC
+  Widget _buildWaterTab() {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        Icon(
+          Icons.water_drop,
+          size: 60,
+          color: Colors.blue,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Mua nước để tưới cây',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          '5 Coins / 1 Nước',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Nước hiện có: $_waterCount',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: _handleBuyWater,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+          ),
+          child: const Text('Mua Nước'),
+        ),
+      ],
+    );
+  }
+
   Widget _buildConfirmationDialog() {
+    String title = '';
+    String message = '';
+    VoidCallback? onConfirm;
+
+    if (_dialogType == 'buy') {
+      title = 'Xác nhận mua';
+      message = 'Mua $_selectedPlant với giá ${_shopPlants.firstWhere((p) => p["name"] == _selectedPlant)["price"]} coins?';
+      onConfirm = _confirmBuy;
+    } else if (_dialogType == 'plant') {
+      title = 'Xác nhận trồng';
+      message = 'Trồng $_selectedPlant?';
+      onConfirm = _confirmPlant;
+    } else if (_dialogType == 'buyWater') {
+      title = 'Xác nhận mua';
+      message = 'Mua 1 nước với giá 5 coins?';
+      onConfirm = _confirmBuyWater;
+    }
+
     return Stack(
       children: [
-        // Backdrop
         Container(
           color: Colors.black.withOpacity(0.7),
         ),
-        // Dialog
         Center(
           child: Container(
             width: 280,
@@ -606,7 +710,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _dialogType == 'buy' ? 'Xác nhận mua' : 'Xác nhận trồng',
+                  title,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -614,9 +718,7 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _dialogType == 'buy'
-                      ? 'Mua $_selectedPlant với giá ${_shopPlants.firstWhere((p) => p["name"] == _selectedPlant)["price"]} coins?'
-                      : 'Trồng $_selectedPlant?',
+                  message,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey[600],
@@ -631,7 +733,6 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                         onPressed: () {
                           setState(() {
                             _showConfirmDialog = false;
-                            _selectedPlant = null;
                           });
                         },
                         child: const Text('Hủy'),
@@ -640,12 +741,12 @@ class _ShopOverlayState extends State<ShopOverlay> with SingleTickerProviderStat
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _dialogType == 'buy' ? _confirmBuy : _confirmPlant,
+                        onPressed: onConfirm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                         ),
-                        child: Text(_dialogType == 'buy' ? 'Mua' : 'Trồng'),
+                        child: const Text('Xác nhận'),
                       ),
                     ),
                   ],
