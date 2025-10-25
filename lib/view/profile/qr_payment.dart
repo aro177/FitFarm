@@ -14,8 +14,8 @@ class QRPaymentPage extends StatefulWidget {
 
   static const Map<String, String> MY_BANK = {
     "BANK_ID": "MB",
-    "ACCOUNT_NUMBER": "6686666866669",
-    "ACCOUNT_NAME": "FITFARM",
+    "ACCOUNT_NUMBER": "0332368215",
+    "ACCOUNT_NAME": "PHUNG PHUONG ANH",
   };
 
   const QRPaymentPage({
@@ -37,7 +37,7 @@ class _QRPaymentPageState extends State<QRPaymentPage> {
 
   // Google Apps Script URL
   static const String _googleScriptURL = 
-      "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLh3HT2djVXZeMDAB6cnTfSGmqxqNsOp-kvZmWekTHgBRs-gNmyrjL6x1ESKrmZbybnEQ-EOyt5roYvUxBY2FwrNhPZwdhdo9WL8OttXPwio6IodCs9Rah-ZWJFWE7uL9_ORHRMrWcOUombmz_ZIvfxh3k48Ty1O4ymzkFmuHzXez2cTmKvd4d4-nckEosG_1Q78jD6bSDfRDkNcrghWLqype_CJ1pF1MYPNkcgTv9gkm9zTuLVFvyhx-fzMTFWva04hDCbn5Ge6LuIwTYDtg72ntuVvd7Ucg5utN785&lib=MGBIhgpK6XOzv2as5Gy0Wr_JqafM2Pfzr";
+      "https://script.google.com/macros/s/AKfycbzntHQPTfSr3Y6i9jAF16WY-SGU94NqmxrXGWmcgIxNp9yhyjTILv07yNDIlTJuI60ERQ/exec";
 
   @override
   void initState() {

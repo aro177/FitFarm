@@ -161,28 +161,13 @@ class _PremiumViewState extends State<PremiumView> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => QRPaymentPage(
-                    premiumDays: 7,
-                    amount: 50000,
-                  ),
-                ),
-              );
-            },
-            child: const Text("7 Days Package - 50,000 VND"),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => QRPaymentPage(
                     premiumDays: 30,
-                    amount: 150000,
+                    amount: 49000,
                   ),
                 ),
               );
             },
-            child: const Text("30 Days Package - 150,000 VND"),
+            child: const Text("30 Days Package - 49,000 VND"),
           ),
           const SizedBox(height: 12),
           ElevatedButton(
@@ -192,12 +177,27 @@ class _PremiumViewState extends State<PremiumView> {
                 MaterialPageRoute(
                   builder: (context) => QRPaymentPage(
                     premiumDays: 90,
-                    amount: 400000,
+                    amount: 149000,
                   ),
                 ),
               );
             },
-            child: const Text("90 Days Package - 400,000 VND"),
+            child: const Text("90 Days Package - 149,000 VND"),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRPaymentPage(
+                    premiumDays: 365,
+                    amount: 399000,
+                  ),
+                ),
+              );
+            },
+            child: const Text("365 Days Package - 399,000 VND"),
           ),
           const SizedBox(height: 24),
           const Text(
